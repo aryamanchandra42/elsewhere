@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.db
+.env
+venv/
+.python-version
+
+# GloVe / model caches
+backend/model_cache/
+backend/model_cache_50d/
+backend/glove*/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+Thumbs.db
