@@ -14,3 +14,5 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.7"
+      - key: ALLOWED_ORIGINS
+        value: "https://playelsewhere.xyz,https://www.playelsewhere.xyz,https://elsewhere-beta.vercel.app"

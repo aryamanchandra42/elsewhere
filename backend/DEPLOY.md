@@ -26,9 +26,10 @@ git push -u origin main
 
 In the same “Create Web Service” screen, find **Environment** or **Environment Variables**.
 
-| Key            | Value        | Notes |
-|----------------|-------------|--------|
-| `SECRET_KEY`   | (see below) | **Required.** Used for login sessions. |
+| Key               | Value        | Notes |
+|-------------------|-------------|--------|
+| `SECRET_KEY`      | (see below) | **Required.** Used for login sessions. |
+| `ALLOWED_ORIGINS` | (optional)  | Comma-separated frontend URLs for CORS. The app always allows `https://playelsewhere.xyz` and the Vercel preview URL; set this only if you add another custom domain. |
 
 **Generate a secret key** (pick one method):
 

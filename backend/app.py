@@ -26,7 +26,24 @@ from semantic_scoring import evaluate_move_cached, map_score
 from sqlalchemy import inspect, text
 
 app = Flask(__name__)
-CORS(app, origins=os.environ.get("ALLOWED_ORIGINS", "*").split(","))
+
+
+def _cors_origins():
+    """Allowed browser origins. Env ALLOWED_ORIGINS adds/overrides; production domains are always included."""
+    production = [
+        "https://playelsewhere.xyz",
+        "https://www.playelsewhere.xyz",
+        "https://elsewhere-beta.vercel.app",
+    ]
+    local = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    raw = os.environ.get("ALLOWED_ORIGINS", "").strip()
+    if raw == "*":
+        return "*"
+    extra = [o.strip() for o in raw.split(",") if o.strip()] if raw else []
+    return list(dict.fromkeys(extra + production + local))
+
+
+CORS(app, origins=_cors_origins())
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-in-production")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "DATABASE_URL",
