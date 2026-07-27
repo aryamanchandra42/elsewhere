@@ -1,4 +1,20 @@
-import { useEffect, useRef } from 'react';
+import WordTiles from './WordTiles.jsx';
+
+function tierFromEntry(item) {
+  if (item.moveResult === 'STRIKE') return 'bad';
+  if (item.moveResult === 'SEED') return null;
+  if (typeof item.z === 'number') {
+    if (item.z < 0) return 'bad';
+    if (item.z < 1) return 'mid';
+    return 'good';
+  }
+  if (typeof item.distance === 'number') {
+    if (item.distance < 45) return 'bad';
+    if (item.distance < 62) return 'mid';
+    return 'good';
+  }
+  return null;
+}
 
 function HistoryEntry({ item, p1Name, p2Name, gameMode }) {
   let playerDisplay = '';
@@ -10,65 +26,47 @@ function HistoryEntry({ item, p1Name, p2Name, gameMode }) {
     playerDisplay = item.player === 'user' ? p1Name : (gameMode === 'online' ? p2Name : 'Computer');
   }
 
-  const playerTone = item.player === 'user'
-    ? '#4d4036'
-    : item.player === 'computer'
-      ? '#6a5a4c'
-      : '#8a7b6f';
+  const tier = tierFromEntry(item);
+  const borderColor = tier === 'good' ? 'var(--good)' : tier === 'mid' ? 'var(--mid)' : tier === 'bad' ? 'var(--bad)' : 'var(--border-strong)';
 
-  let distanceContent = null;
+  let distanceLabel = null;
   if (item.moveResult === 'SEED') {
-    distanceContent = (
-      <div className="mt-1 flex items-center justify-between text-[11px]" style={{ color: '#7d6f62' }}>
-        <span>Distance</span>
-        <span className="font-medium" style={{ color: '#4d4036' }}>– (anchor)</span>
-      </div>
-    );
+    distanceLabel = <span style={{ color: 'var(--text-muted)' }}>Anchor word</span>;
   } else if (item.moveResult === 'STRIKE') {
-    distanceContent = (
-      <div className="mt-1 flex items-center justify-between text-[11px]" style={{ color: '#9a6b5c' }}>
-        <span>Too close</span>
-        <span className="font-medium">{item.distance != null ? item.distance.toFixed(3) : '–'} (strike)</span>
-      </div>
+    distanceLabel = (
+      <span style={{ color: 'var(--bad)' }}>
+        Strike{item.distance != null ? ` · ${item.distance.toFixed(3)}` : ''}
+      </span>
     );
   } else if (item.distance != null) {
-    distanceContent = (
-      <div className="mt-1 flex items-center justify-between text-[11px]" style={{ color: '#7d6f62' }}>
-        <span>Distance</span>
-        <span className="font-medium" style={{ color: '#4d4036' }}>{item.distance.toFixed(3)}</span>
-      </div>
+    distanceLabel = (
+      <span style={{ color: tier === 'good' ? 'var(--good)' : tier === 'mid' ? 'var(--mid)' : 'var(--text-body)' }}>
+        +{item.distance.toFixed(3)} distance
+      </span>
     );
   }
 
   return (
-    <div className="rounded-md border border-l-[3px] px-2 py-1.5 animate-in" style={{ borderColor: '#e7ddd4', background: 'rgba(250,247,244,0.9)', borderLeftColor: '#d3c9be' }}>
-      <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.08em]" style={{ color: playerTone }}>
-        <span>{playerDisplay}</span>
+    <div className="history-entry px-2.5 py-2" style={{ borderLeftColor: borderColor }}>
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <span className="game-subtitle" style={{ fontSize: '9px' }}>{playerDisplay}</span>
+        {distanceLabel && <span className="text-[10px] font-semibold">{distanceLabel}</span>}
       </div>
-      <div className="text-base leading-tight break-words" style={{ color: '#2f2b27' }}>{item.word}</div>
-      {distanceContent}
+      <WordTiles word={item.word} tier={tier} size="xs" minSlots={item.word?.length || 1} />
     </div>
   );
 }
 
 export default function WordHistory({ history, p1Name, p2Name, gameMode }) {
-  const scrollRef = useRef(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = 0;
-    }
-  }, [history.length]);
-
   return (
     <div
-      className="mt-3 border rounded-md px-3 py-2 min-h-0 flex-1 flex flex-col max-md:hidden"
-      style={{ borderColor: 'var(--lux-border)', background: 'var(--lux-surface-soft)', minHeight: '120px' }}
+      className="mt-3 border rounded-lg px-3 py-2 min-h-0 flex-1 flex flex-col max-md:hidden"
+      style={{ borderColor: 'var(--border-soft)', background: 'var(--bg-surface)', minHeight: '120px' }}
     >
-      <p className="text-[11px] tracking-[0.16em] font-semibold mb-2" style={{ color: 'var(--lux-text-muted)' }}>HISTORY</p>
-      <div ref={scrollRef} className="min-h-0 h-full overflow-y-auto pr-1 space-y-2 text-sm" style={{ color: 'var(--lux-text-body)' }}>
+      <p className="game-subtitle mb-2">Word trail</p>
+      <div className="min-h-0 h-full overflow-y-auto pr-1 space-y-2 text-sm" style={{ color: 'var(--text-body)' }}>
         {history.length === 0
-          ? <div className="text-center pt-2" style={{ color: 'var(--lux-text-muted)' }}>No guesses yet...</div>
+          ? <div className="text-center pt-2 game-subtitle">No words played yet…</div>
           : [...history].reverse().map((item, i) => (
             <HistoryEntry key={i} item={item} p1Name={p1Name} p2Name={p2Name} gameMode={gameMode} />
           ))

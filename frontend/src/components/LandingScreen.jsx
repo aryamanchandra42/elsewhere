@@ -1,5 +1,6 @@
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
+import { WordPairDemo } from './WordTiles.jsx';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -46,8 +47,8 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
       {/* ── Sticky header ── */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-5 sm:px-8 h-14"
         style={{ background: 'var(--header-bg)', borderBottom: '1px solid var(--border)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.1rem', letterSpacing: '0.14em', color: 'var(--text-strong)' }}>
-          ◈ ELSEWHERE
+        <span className="game-title" style={{ fontSize: '1rem', color: 'var(--text-strong)' }}>
+          ELSEWHERE
         </span>
         <div className="flex items-center gap-2">
           <button type="button"
@@ -77,19 +78,18 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
 
         <motion.div initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-6"
-          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: 26 }}>
-          ◈
+          className="inline-flex items-center justify-center w-14 h-14 rounded-lg mb-6 word-tile tile-good"
+          style={{ fontSize: '1.4rem', width: 56, height: 56 }}>
+          W
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="game-title"
           style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: 'clamp(3.2rem, 15vw, 8rem)',
-            lineHeight: 0.92,
-            letterSpacing: '0.06em',
+            fontSize: 'clamp(2.4rem, 12vw, 5.5rem)',
+            lineHeight: 0.95,
             color: 'var(--text-strong)',
           }}>
           ELSEWHERE
@@ -103,26 +103,27 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
           Jump far from every word — or pay with a strike.
         </motion.p>
 
-        {/* Distance demo cards */}
+        {/* Distance demo — letter tiles */}
         <motion.div
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28, duration: 0.6 }}
-          style={{ marginTop: '2.5rem', width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+          style={{ marginTop: '2.5rem', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
           {[
-            { pair: 'apple → galaxy', pct: '88%', color: 'var(--good)', label: 'Safe — huge jump' },
-            { pair: 'apple → orange', pct: '18%', color: 'var(--bad)', label: 'Strike — same family' },
-          ].map((ex, i) => (
-            <div key={ex.pair} className="rounded-xl px-4 py-3 text-left"
-              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-                <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.1rem', color: 'var(--text-strong)' }}>{ex.pair}</span>
-                <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: ex.color }}>{ex.label}</span>
+            { from: 'apple', to: 'galaxy', tier: 'good', label: 'Safe — huge jump', pct: '88%' },
+            { from: 'apple', to: 'orange', tier: 'bad', label: 'Strike — too close', pct: '18%' },
+          ].map((ex) => (
+            <div key={ex.from + ex.to} className="rounded-lg px-4 py-4 text-left"
+              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
+              <WordPairDemo from={ex.from} to={ex.to} tier={ex.tier} size="sm" />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
+                <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }}>{ex.label}</span>
+                <span className="game-subtitle">{ex.pct}</span>
               </div>
-              <div style={{ height: 5, borderRadius: 999, background: 'var(--progress-track)', overflow: 'hidden' }}>
+              <div style={{ height: 6, borderRadius: 4, background: 'var(--progress-track)', overflow: 'hidden', marginTop: '0.5rem' }}>
                 <motion.div
                   initial={{ width: 0 }} animate={{ width: ex.pct }}
-                  transition={{ delay: 0.7 + i * 0.15, duration: 1, ease: 'easeOut' }}
-                  style={{ height: '100%', borderRadius: 999, background: ex.color }} />
+                  transition={{ delay: 0.9, duration: 0.8, ease: 'easeOut' }}
+                  style={{ height: '100%', borderRadius: 4, background: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }} />
               </div>
             </div>
           ))}
@@ -157,7 +158,7 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
         <Reveal className="max-w-3xl mx-auto px-6 py-8 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
           {FACTS.map(f => (
             <div key={f.label}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '2.6rem', lineHeight: 1, color: 'var(--text-strong)', letterSpacing: '0.02em' }}>{f.value}</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '2.2rem', fontWeight: 800, lineHeight: 1, color: 'var(--text-strong)', letterSpacing: '0.02em' }}>{f.value}</div>
               <div style={{ marginTop: '0.35rem', fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{f.label}</div>
             </div>
           ))}
@@ -168,7 +169,7 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
       <section className="max-w-4xl mx-auto px-5 sm:px-8 py-20">
         <Reveal>
           <p style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>The rules</p>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(2rem, 6vw, 3rem)', color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: '3rem' }}>
+          <h2 className="game-title" style={{ fontSize: 'clamp(1.6rem, 5vw, 2.4rem)', color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: '3rem' }}>
             One rule. Infinite combinations.
           </h2>
         </Reveal>
@@ -223,7 +224,7 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
         <Reveal>
           <div className="max-w-2xl mx-auto px-5 py-24 text-center">
             <div style={{ fontSize: 28, marginBottom: '1rem' }}>◈</div>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(2.2rem, 7vw, 3.5rem)', color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: '1rem' }}>
+            <h2 className="game-title" style={{ fontSize: 'clamp(2.2rem, 7vw, 3.2rem)', color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: '1rem' }}>
               Ready to jump?
             </h2>
             <p style={{ fontSize: '0.9rem', lineHeight: 1.7, color: 'var(--text-body)', marginBottom: '2rem', maxWidth: 360, margin: '0 auto 2rem' }}>
@@ -240,7 +241,7 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
 
       {/* ── FOOTER ── */}
       <footer style={{ borderTop: '1px solid var(--border)', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '0.95rem', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>◈ ELSEWHERE</span>
+        <span className="game-title" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>ELSEWHERE</span>
         <span style={{ fontSize: '11px', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>Powered by GloVe word embeddings</span>
       </footer>
     </div>

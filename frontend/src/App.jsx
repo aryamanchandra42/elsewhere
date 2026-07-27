@@ -6,6 +6,7 @@ import LandingScreen from './components/LandingScreen.jsx';
 import RematchModal from './components/RematchModal.jsx';
 import WordHistory from './components/WordHistory.jsx';
 import CircularTimer from './components/CircularTimer.jsx';
+import WordTiles, { WordInputTiles } from './components/WordTiles.jsx';
 import * as api from './api.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -73,13 +74,17 @@ function tierFromMove(z, distance) {
   return null;
 }
 
-function cardCls(tier, isActive) {
-  let c = 'rounded-sm border px-2 py-1.5 transition-all duration-300';
+function panelCls(tier, isActive) {
+  let c = 'player-panel px-3 py-3 transition-all duration-300';
   if (isActive) c += ' active-turn';
   if (tier === 'good') c += ' tier-good';
   else if (tier === 'mid') c += ' tier-mid';
   else if (tier === 'bad') c += ' tier-bad';
   return c;
+}
+
+function cardCls(tier, isActive) {
+  return panelCls(tier, isActive);
 }
 
 function onlineHistorySlot(player) {
@@ -1156,20 +1161,15 @@ export default function App() {
                 style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
                 <span style={{ fontSize: 18 }}>◈</span>
               </div>
-              <h1 className="leading-none tracking-[0.1em]"
+              <h1 className="leading-none tracking-[0.1em] game-title"
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
                   color: 'var(--text-strong)',
                   fontSize: 'clamp(2rem, 11vw, 3rem)',
                 }}>
                 ELSEWHERE
               </h1>
-              <p className="text-[10px] sm:text-[11px] mt-3 tracking-[0.18em] uppercase" style={{ color: 'var(--text-muted)' }}>
-                Stay far from the last word
-              </p>
-              <p className="text-[10px] sm:text-[11px] mt-1 tracking-[0.1em]" style={{ color: 'var(--text-muted)' }}>
-                Three too-close fouls and you're out
-              </p>
+              <p className="game-subtitle mt-3">Stay far from the last word</p>
+              <p className="game-subtitle mt-1">Three too-close fouls and you&apos;re out</p>
             </motion.div>
 
             <motion.div className="mt-8 space-y-2.5"
@@ -1249,8 +1249,7 @@ export default function App() {
                 className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
                 style={{ color: 'var(--text-muted)', background: 'var(--bg-surface)' }}
                 onClick={() => { resetGame(); setScreen('menu'); }}>←</motion.button>
-              <h1 className="text-center text-[22px] sm:text-[34px] tracking-[0.12em] leading-none"
-                style={{ fontFamily: "'Cormorant Garamond', serif", color: 'var(--text-strong)' }}>ELSEWHERE</h1>
+              <h1 className="text-center text-lg sm:text-2xl leading-none game-title">ELSEWHERE</h1>
               <button type="button" onClick={toggleTheme}
                 className="w-9 h-9 rounded-lg flex items-center justify-center ml-auto"
                 style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: 14 }}
@@ -1399,8 +1398,7 @@ export default function App() {
                 transition={{ duration: 0.3 }}
                 className="flex-1 p-2 sm:p-3 border-t overflow-hidden min-h-0 flex"
                 style={{ borderColor: 'var(--border)' }}>
-                <main className="flex-1 rounded-xl p-3 sm:p-4 overflow-hidden min-h-0 flex flex-col glass-raised"
-                  style={{ borderColor: 'var(--border)' }}>
+                <main className="flex-1 rounded-xl p-3 sm:p-4 overflow-hidden min-h-0 flex flex-col game-board">
 
                   {/* Top bar: turn indicator + timer */}
                   <div className="shrink-0 flex items-center justify-between mb-2">
@@ -1444,91 +1442,95 @@ export default function App() {
                   )}
                   </AnimatePresence>
 
-                  {/* Round progress */}
+                  {/* Round progress — tile dots (capped for long matches) */}
                   <div className="shrink-0 mb-3">
-                    <div className="flex justify-between text-[9px] uppercase tracking-[0.12em] mb-1" style={{ color: 'var(--text-muted)' }}>
-                      <span>Match progress</span><span>Round {currentRound}/{maxRounds}</span>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="game-subtitle">Round {currentRound}/{maxRounds}</span>
+                      <span className="game-subtitle">{Math.round((currentRound / maxRounds) * 100)}%</span>
                     </div>
-                    <div className="h-1 w-full rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
-                      <motion.div className="h-full rounded-full"
-                        style={{ background: 'linear-gradient(90deg, var(--good), var(--mid))' }}
-                        animate={{ width: `${Math.min(100, (currentRound / maxRounds) * 100)}%` }}
-                        transition={{ duration: 0.6, ease: 'easeOut' }} />
-                    </div>
+                    {maxRounds <= 15 ? (
+                      <div className="round-dots">
+                        {Array.from({ length: maxRounds }, (_, i) => {
+                          const n = i + 1;
+                          let cls = 'round-dot';
+                          if (n < currentRound) cls += ' done';
+                          else if (n === currentRound) cls += ' current';
+                          return <span key={n} className={cls} title={`Round ${n}`} />;
+                        })}
+                      </div>
+                    ) : (
+                      <div className="h-2 w-full rounded overflow-hidden" style={{ background: 'var(--progress-track)' }}>
+                        <motion.div className="h-full"
+                          style={{ background: 'var(--good)', borderRadius: 4 }}
+                          animate={{ width: `${Math.min(100, (currentRound / maxRounds) * 100)}%` }}
+                          transition={{ duration: 0.6, ease: 'easeOut' }} />
+                      </div>
+                    )}
                   </div>
 
-                  {/* Word cards */}
-                  <div className="shrink-0 grid grid-cols-2 gap-2 rounded-xl p-2"
-                    style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  {/* Word panels */}
+                  <div className="shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-                    {/* P1 card */}
-                    <motion.div layout
-                      className={`word-card-shell px-2.5 py-2 ${cardCls(p1Tier, activeIsP1)}`}
-                      style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}>
-                      <div className="flex items-start justify-between text-[9px] uppercase tracking-[0.1em] font-semibold" style={{ color: 'var(--text-muted)' }}>
-                        <span>{p1Name}</span>
+                    {/* P1 panel */}
+                    <motion.div layout className={panelCls(p1Tier, activeIsP1)}>
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="game-subtitle">{p1Name}</span>
                         <span className="text-right">
-                          <span ref={p1ScoreRef} className="block text-[11px]" style={{ color: 'var(--text-strong)' }}>{userScore.toFixed(2)}</span>
-                          <span className="font-normal normal-case tracking-normal">
+                          <span ref={p1ScoreRef} className="block text-sm font-bold tabular-nums" style={{ color: 'var(--text-strong)' }}>{userScore.toFixed(2)}</span>
+                          <span className="inline-flex gap-0.5 mt-0.5">
                             {Array.from({ length: STRIKE_LIMIT }).map((_, i) => (
-                              <span key={i} style={{ color: i < strikesP1 ? 'var(--bad)' : 'rgba(255,255,255,0.15)', marginLeft: 1 }}>✕</span>
+                              <span key={i} className={`strike-pip${i < strikesP1 ? ' used' : ''}`} />
                             ))}
                           </span>
                         </span>
                       </div>
-                      <div className="mt-1.5 min-h-[2.75rem] flex items-center justify-center">
+                      <div className="min-h-[3rem] flex items-center justify-center py-1">
                         {(activeIsP1 && (gameMode !== 'online' || isUserTurn) && !submitting) ? (
-                          <input id="word-input-main" ref={wordInputRef} type="text" autoComplete="off"
-                            inputMode="text" enterKeyHint="done" maxLength={24}
-                            placeholder="Type a word…" value={wordInput}
+                          <WordInputTiles
+                            id="word-input-main"
+                            inputRef={wordInputRef}
+                            value={wordInput}
                             onChange={e => setWordInput(e.target.value)}
-                            className="word-card-input" />
+                            placeholder="Type a word"
+                            maxLength={24}
+                            size="md"
+                          />
+                        ) : displayUserWord !== '–' ? (
+                          <WordTiles word={displayUserWord} tier={p1Tier} size="md" animateReveal minSlots={displayUserWord.length} />
                         ) : (
-                          <AnimatePresence mode="wait">
-                            <motion.p key={displayUserWord}
-                              initial={{ opacity: 0, y: 4, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
-                              transition={{ duration: 0.25 }}
-                              className="text-center leading-tight break-all w-full"
-                              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(1.3rem,5vw,2.1rem)', color: 'var(--text-strong)' }}>
-                              {displayUserWord}
-                            </motion.p>
-                          </AnimatePresence>
+                          <WordTiles word="" size="md" placeholder minSlots={5} />
                         )}
                       </div>
                     </motion.div>
 
-                    {/* P2 card */}
-                    <motion.div layout
-                      className={`word-card-shell px-2.5 py-2 ${cardCls(p2Tier, !activeIsP1)}`}
-                      style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}>
-                      <div className="flex items-start justify-between text-[9px] uppercase tracking-[0.1em] font-semibold" style={{ color: 'var(--text-muted)' }}>
-                        <span>{p2Name}</span>
+                    {/* P2 panel */}
+                    <motion.div layout className={panelCls(p2Tier, !activeIsP1)}>
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="game-subtitle">{p2Name}</span>
                         <span className="text-right">
-                          <span ref={p2ScoreRef} className="block text-[11px]" style={{ color: 'var(--text-strong)' }}>{computerScore.toFixed(2)}</span>
-                          <span className="font-normal normal-case tracking-normal">
+                          <span ref={p2ScoreRef} className="block text-sm font-bold tabular-nums" style={{ color: 'var(--text-strong)' }}>{computerScore.toFixed(2)}</span>
+                          <span className="inline-flex gap-0.5 mt-0.5">
                             {Array.from({ length: STRIKE_LIMIT }).map((_, i) => (
-                              <span key={i} style={{ color: i < strikesP2 ? 'var(--bad)' : 'rgba(255,255,255,0.15)', marginLeft: 1 }}>✕</span>
+                              <span key={i} className={`strike-pip${i < strikesP2 ? ' used' : ''}`} />
                             ))}
                           </span>
                         </span>
                       </div>
-                      <div className="mt-1.5 min-h-[2.75rem] flex items-center justify-center">
+                      <div className="min-h-[3rem] flex items-center justify-center py-1">
                         {(gameMode === 'pvp' && !activeIsP1) ? (
-                          <input id="word-input-main" ref={wordInputRef} type="text" autoComplete="off"
-                            inputMode="text" enterKeyHint="done" maxLength={24}
-                            placeholder={`${p2Name}, type…`} value={wordInput}
+                          <WordInputTiles
+                            id="word-input-main"
+                            inputRef={wordInputRef}
+                            value={wordInput}
                             onChange={e => setWordInput(e.target.value)}
-                            className="word-card-input" />
+                            placeholder={`${p2Name}, type`}
+                            maxLength={24}
+                            size="md"
+                          />
+                        ) : displayOppWord !== '–' ? (
+                          <WordTiles word={displayOppWord} tier={p2Tier} size="md" animateReveal minSlots={displayOppWord.length} />
                         ) : (
-                          <AnimatePresence mode="wait">
-                            <motion.p key={displayOppWord}
-                              initial={{ opacity: 0, y: 4, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
-                              transition={{ duration: 0.25 }}
-                              className="text-center leading-tight break-all w-full"
-                              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(1.3rem,5vw,2.1rem)', color: 'var(--text-strong)' }}>
-                              {displayOppWord}
-                            </motion.p>
-                          </AnimatePresence>
+                          <WordTiles word="" size="md" placeholder minSlots={5} />
                         )}
                       </div>
                     </motion.div>
@@ -1572,7 +1574,7 @@ export default function App() {
                           </span>
                           Sending
                         </span>
-                      ) : 'Submit →'}
+                      ) : 'Enter'}
                     </motion.button>
                   </div>
 
@@ -1651,9 +1653,8 @@ export default function App() {
                   <motion.h2
                     initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.4 }}
-                    className="text-2xl sm:text-3xl tracking-[0.04em] text-center"
+                    className="text-2xl sm:text-3xl tracking-[0.06em] text-center game-title"
                     style={{
-                      fontFamily: "'Cormorant Garamond', serif",
                       color: isOnlineLoss || gameEndedByTimeout || (gameEndedTooClose && tooCloseLoserIsUser) ? 'var(--bad)' : 'var(--good)'
                     }}>
                     {resultText}
@@ -1667,7 +1668,7 @@ export default function App() {
                     {[[p1Name, userScore, strikesP1], [p2Name, computerScore, strikesP2]].map(([name, score, strikes]) => (
                       <div key={name} className="glass-raised rounded-xl p-3">
                         <p className="text-[10px] tracking-[0.16em] uppercase mb-1" style={{ color: 'var(--text-muted)' }}>{name}</p>
-                        <p className="text-3xl font-light" style={{ color: 'var(--text-strong)', fontFamily: "'Cormorant Garamond', serif" }}>
+                        <p className="text-3xl font-bold tabular-nums" style={{ color: 'var(--text-strong)' }}>
                           {Number(score).toFixed(2)}
                         </p>
                         <p className="text-[10px] mt-0.5" style={{ color: strikes >= STRIKE_LIMIT ? 'var(--bad)' : 'var(--text-muted)' }}>
