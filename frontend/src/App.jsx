@@ -4,9 +4,10 @@ import IntroOverlay from './components/IntroOverlay.jsx';
 import HowToPlayModal from './components/HowToPlayModal.jsx';
 import LandingScreen from './components/LandingScreen.jsx';
 import RematchModal from './components/RematchModal.jsx';
-import WordHistory from './components/WordHistory.jsx';
-import CircularTimer from './components/CircularTimer.jsx';
-import WordTiles, { WordInputTiles } from './components/WordTiles.jsx';
+import MenuScreen from './components/MenuScreen.jsx';
+import GameLobby from './components/GameLobby.jsx';
+import GameBoard from './components/GameBoard.jsx';
+import GameOver from './components/GameOver.jsx';
 import * as api from './api.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -74,36 +75,12 @@ function tierFromMove(z, distance) {
   return null;
 }
 
-function panelCls(tier, isActive) {
-  let c = 'player-panel px-3 py-3 transition-all duration-300';
-  if (isActive) c += ' active-turn';
-  if (tier === 'good') c += ' tier-good';
-  else if (tier === 'mid') c += ' tier-mid';
-  else if (tier === 'bad') c += ' tier-bad';
-  return c;
-}
-
-function cardCls(tier, isActive) {
-  return panelCls(tier, isActive);
-}
-
 function onlineHistorySlot(player) {
   if (player === 'host') return 0;
   if (player === 'guest') return 1;
   if (typeof player === 'number') return player;
   const n = parseInt(player, 10);
   return Number.isNaN(n) ? null : n;
-}
-
-function hintMessage(step, gameMode, isUserTurn, moveNumber) {
-  if (step === 2) return "Green = safe jump. Yellow = risky. Three too-close fouls and you're out. Aim for green.";
-  if (step === 1) {
-    if (gameMode === 'online') return "Wait for your opponent, then jump far when it's your turn. Cross categories: object → emotion → place.";
-    return "Good! Now jump as far as possible. Cross categories: object → emotion → place.";
-  }
-  if (gameMode === 'pvp') return "Player 1: type any English word. It becomes the anchor for this round.";
-  if (gameMode === 'online' && !isUserTurn && moveNumber === 0) return "Wait for your opponent. You'll take turns jumping far from each word.";
-  return "Type any English word. It becomes the anchor for this round.";
 }
 
 // ─── DOM FX (no React state needed) ──────────────────────────────────────────
@@ -142,22 +119,6 @@ function spawnConfetti() {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  // Theme: 'dark' | 'light'
-  const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem('elsewhere_theme') || 'dark'; } catch { return 'dark'; }
-  });
-  const toggleTheme = useCallback(() => {
-    setTheme(t => {
-      const next = t === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem('elsewhere_theme', next); } catch {}
-      return next;
-    });
-  }, []);
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  // Screen / phase: 'landing' | 'menu' | 'game'
   const [screen, setScreen] = useState(() => {
     const { code, token } = readCredentials();
     return (code && token) ? 'game' : 'landing';
@@ -229,10 +190,7 @@ export default function App() {
   const [shareText, setShareText] = useState('');
   const [copyStatus, setCopyStatus] = useState('');
 
-  // Menu UI
-  const [showPvpSetup, setShowPvpSetup] = useState(false);
-  const [pvpName1, setPvpName1] = useState('');
-  const [pvpName2, setPvpName2] = useState('');
+  // Online lobby form state
   const [onlineNameInput, setOnlineNameInput] = useState('');
   const [onlineJoinCodeInput, setOnlineJoinCodeInput] = useState('');
   const [onlineMaxPlayers, setOnlineMaxPlayers] = useState(4);
@@ -946,6 +904,25 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearTiers, startTimer, stopPoll, stopTimer]);
 
+  // ─── Menu navigation (mode select) ───────────────────────────────────────────
+  // All local modes now route through the intro/settings screen before startGame()
+  // is actually called — the player taps "Start game" once they're happy with the
+  // rounds/turn-time settings, instead of jumping straight into an active board.
+  const startPvcFlow = useCallback(() => {
+    setGameMode('pvc'); setP1Name('You'); setP2Name('Computer');
+    setScreen('game'); setGamePhase('intro');
+  }, []);
+
+  const startPvpFlow = useCallback((n1, n2) => {
+    setP1Name(n1); setP2Name(n2); setGameMode('pvp');
+    setScreen('game'); setGamePhase('intro');
+  }, []);
+
+  const startOnlineFlow = useCallback(() => {
+    setGameMode('online'); setOnlineLobbyError(''); setOnlineSessionError('');
+    setScreen('game'); setGamePhase('intro');
+  }, []);
+
   // ─── Premove queue ────────────────────────────────────────────────────────────
   const queuePremove = useCallback(() => {
     const w = premoveInput.trim().toLowerCase();
@@ -953,6 +930,8 @@ export default function App() {
     setErrorMsg('');
     setPremoveWord(w);
   }, [premoveInput]);
+
+  const clearPremove = useCallback(() => { setPremoveWord(null); setPremoveInput(''); }, []);
 
   // ─── Restore saved session on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -1048,19 +1027,26 @@ export default function App() {
 
   // ─── Result text (game over) ──────────────────────────────────────────────────
   let resultText = 'Full rounds — tie game.';
-  let resultColor = '#4f3c2f';
   const isOnlineLoss = onlineMySlot !== null && onlineMySlot === onlineLoserSlot;
   if (gameMode === 'online') {
-    if (onlineEndReason === 'timeout') { resultText = isOnlineLoss ? "Time's up. You lose." : 'Opponent timed out. You win!'; resultColor = isOnlineLoss ? '#b35b4a' : '#6f8d62'; }
-    else if (onlineEndReason === 'too_close') { resultText = isOnlineLoss ? '3 strikes, too close. You lose.' : 'Opponent hit 3 strikes. You win!'; resultColor = isOnlineLoss ? '#b35b4a' : '#6f8d62'; }
+    if (onlineEndReason === 'timeout') { resultText = isOnlineLoss ? "Time's up. You lose." : 'Opponent timed out. You win!'; }
+    else if (onlineEndReason === 'too_close') { resultText = isOnlineLoss ? '3 strikes, too close. You lose.' : 'Opponent hit 3 strikes. You win!'; }
     else resultText = 'Full rounds — tie game.';
   } else if (gameEndedByTimeout) {
     resultText = gameMode === 'pvp' ? `Time's up! ${currentPlayer === 1 ? p2Name : p1Name} wins!` : "Time's up. You lose.";
-    resultColor = '#b35b4a';
   } else if (gameEndedTooClose) {
-    resultColor = '#b35b4a';
     if (gameMode === 'pvp') { const w = tooCloseLoserPlayer === 1 ? p2Name : p1Name; const l = tooCloseLoserPlayer === 1 ? p1Name : p2Name; resultText = `${l} hit 3 strikes. ${w} wins!`; }
-    else { resultText = tooCloseLoserIsUser ? '3 strikes, too close. You lose.' : 'Computer hit 3 strikes. You win!'; if (!tooCloseLoserIsUser) resultColor = '#6f8d62'; }
+    else { resultText = tooCloseLoserIsUser ? '3 strikes, too close. You lose.' : 'Computer hit 3 strikes. You win!'; }
+  }
+
+  const isLoss = isOnlineLoss || gameEndedByTimeout || (gameEndedTooClose && tooCloseLoserIsUser);
+
+  // pvcResult drives the "Beat the AI" CTA on the game-over screen
+  let pvcResult = null;
+  if (gameMode === 'pvc') {
+    if (gameEndedByTimeout) pvcResult = 'loss';
+    else if (gameEndedTooClose) pvcResult = tooCloseLoserIsUser ? 'loss' : 'win';
+    else pvcResult = 'tie';
   }
 
   const analysisRows = history.filter(i => i.distance !== null);
@@ -1085,6 +1071,11 @@ export default function App() {
     try { await navigator.clipboard.writeText(shareText); setCopyStatus('Copied!'); setTimeout(() => setCopyStatus(''), 1800); }
     catch { setCopyStatus('Copy failed'); }
   }, [shareText]);
+
+  const toggleSharePanel = useCallback(() => {
+    setShareText(buildShareSummary());
+    setShowSharePanel(s => !s);
+  }, [buildShareSummary]);
 
   // ─── Floating badge turn label ────────────────────────────────────────────────
   const turnLabel = gameMode === 'pvp'
@@ -1117,8 +1108,6 @@ export default function App() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}>
             <LandingScreen
-              theme={theme}
-              onToggleTheme={toggleTheme}
               onPlay={() => setScreen('menu')}
               onHowToPlay={() => setShowHowToPlay(true)}
             />
@@ -1129,105 +1118,16 @@ export default function App() {
       {/* ══════════════════════════ MENU SCREEN ══════════════════════════════════ */}
       <AnimatePresence mode="wait">
       {screen === 'menu' && (
-        <motion.div key="menu"
+        <motion.div key="menu" className="fixed inset-0 z-10 h-full"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-          className="h-full flex items-center justify-center px-4 py-8 overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-[400px] text-center glass rounded-2xl p-6 sm:p-8"
-            style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08)' }}>
-
-            {/* Menu top-bar: back + theme */}
-            <div className="flex items-center justify-between mb-5">
-              <button type="button" onClick={() => setScreen('landing')}
-                className="text-xs btn-ghost rounded-lg px-3 h-8"
-                style={{ letterSpacing: '0.04em' }}>← Back</button>
-              <button type="button" onClick={toggleTheme}
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: 14 }}
-                title="Toggle theme">
-                {theme === 'dark' ? '☀️' : '🌙'}
-              </button>
-            </div>
-
-            {/* Logo */}
-            <motion.div
-              initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.5 }}>
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-xl mb-4"
-                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                <span style={{ fontSize: 18 }}>◈</span>
-              </div>
-              <h1 className="leading-none tracking-[0.1em] game-title"
-                style={{
-                  color: 'var(--text-strong)',
-                  fontSize: 'clamp(2rem, 11vw, 3rem)',
-                }}>
-                ELSEWHERE
-              </h1>
-              <p className="game-subtitle mt-3">Stay far from the last word</p>
-              <p className="game-subtitle mt-1">Three too-close fouls and you&apos;re out</p>
-            </motion.div>
-
-            <motion.div className="mt-8 space-y-2.5"
-              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.22, duration: 0.45 }}>
-              {[
-                { label: 'Pass & Play', action: () => setShowPvpSetup(s => !s), primary: true },
-                { label: 'VS Computer', action: () => { setShowPvpSetup(false); setGameMode('pvc'); setP1Name('You'); setP2Name('Computer'); setScreen('game'); setTimeout(() => startGame(), 50); }, primary: true },
-                { label: 'Online Room', action: () => { setShowPvpSetup(false); setGameMode('online'); setOnlineLobbyError(''); setOnlineSessionError(''); setScreen('game'); setGamePhase('intro'); }, primary: false },
-              ].map((btn, i) => (
-                <motion.button key={btn.label}
-                  whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.97 }}
-                  className={`w-full h-12 rounded-xl font-semibold tracking-[0.05em] text-sm transition ${btn.primary ? 'btn-primary' : 'btn-ghost'}`}
-                  onClick={btn.action}>
-                  {btn.label}
-                </motion.button>
-              ))}
-            </motion.div>
-
-            {/* PvP setup panel */}
-            <AnimatePresence>
-            {showPvpSetup && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden">
-                <div className="mt-3 glass-raised rounded-xl p-4 text-left">
-                  <p className="text-[10px] tracking-[0.2em] uppercase mb-3" style={{ color: 'var(--text-muted)' }}>Pass &amp; Play setup</p>
-                  {['Player 1', 'Player 2'].map((label, i) => (
-                    <div key={label} className={i === 0 ? 'mb-3' : ''}>
-                      <label className="block text-xs mb-1.5" style={{ color: 'var(--text-body)' }}>{label} name</label>
-                      <input type="text" maxLength={12} placeholder={label}
-                        value={i === 0 ? pvpName1 : pvpName2}
-                        onChange={e => i === 0 ? setPvpName1(e.target.value) : setPvpName2(e.target.value)}
-                        className="form-input" />
-                    </div>
-                  ))}
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button type="button" className="h-10 rounded-lg btn-ghost text-sm"
-                      onClick={() => setShowPvpSetup(false)}>Cancel</button>
-                    <motion.button type="button" whileTap={{ scale: 0.97 }}
-                      className="h-10 rounded-lg btn-primary text-sm"
-                      onClick={() => {
-                        const n1 = pvpName1.trim() || 'Player 1';
-                        const n2 = pvpName2.trim() || 'Player 2';
-                        setP1Name(n1); setP2Name(n2); setGameMode('pvp');
-                        setShowPvpSetup(false); setScreen('game'); setTimeout(() => startGame(), 50);
-                      }}>Start</motion.button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-            </AnimatePresence>
-
-            <button type="button" className="mt-5 text-xs tracking-[0.1em] underline underline-offset-4 transition"
-              style={{ color: 'var(--text-muted)' }}
-              onClick={() => setShowHowToPlay(true)}>How to play</button>
-          </motion.div>
+          transition={{ duration: 0.35 }}>
+          <MenuScreen
+            onBack={() => setScreen('landing')}
+            onHowToPlay={() => setShowHowToPlay(true)}
+            onStartPvc={startPvcFlow}
+            onStartPvp={startPvpFlow}
+            onStartOnline={startOnlineFlow}
+          />
         </motion.div>
       )}
       </AnimatePresence>
@@ -1240,558 +1140,125 @@ export default function App() {
           transition={{ duration: 0.3 }}
           className="h-full flex items-stretch md:items-center justify-center px-0 md:px-3 overflow-hidden">
           <div className="w-full max-w-none md:max-w-[1024px] xl:max-w-[1280px] mx-auto glass border-0 md:border rounded-none md:rounded-2xl h-full md:h-[calc(100dvh-1.25rem)] flex flex-col overflow-hidden"
-            style={{ borderColor: 'var(--border)', boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}>
+            style={{ borderColor: 'var(--border)', boxShadow: '0 8px 32px rgba(0,0,0,0.08)' }}>
 
             {/* Header */}
             <div className="h-14 shrink-0 border-b grid items-center px-3"
-              style={{ borderColor: 'var(--border)', gridTemplateColumns: '48px 1fr 48px' }}>
+              style={{ borderColor: 'var(--border)', gridTemplateColumns: '48px 1fr' }}>
               <motion.button whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.93 }}
                 className="w-9 h-9 rounded-lg flex items-center justify-center text-lg"
                 style={{ color: 'var(--text-muted)', background: 'var(--bg-surface)' }}
                 onClick={() => { resetGame(); setScreen('menu'); }}>←</motion.button>
               <h1 className="text-center text-lg sm:text-2xl leading-none game-title">ELSEWHERE</h1>
-              <button type="button" onClick={toggleTheme}
-                className="w-9 h-9 rounded-lg flex items-center justify-center ml-auto"
-                style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: 14 }}
-                title="Toggle theme">
-                {theme === 'dark' ? '☀️' : '🌙'}
-              </button>
             </div>
 
-            {/* ── INTRO / SETTINGS / LOBBY PHASE ── */}
+            {/* Single AnimatePresence for the three game phases — guarantees only one
+                phase is ever mounted at a time (fixes the old lobby/active/over overlap bug). */}
             <AnimatePresence mode="wait">
-            {(gamePhase === 'intro' || gamePhase === 'waiting') && (
-              <motion.div key="lobby"
-                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35 }}
-                className="flex-1 overflow-y-auto p-5 sm:p-7 flex flex-col justify-center">
-
-                {/* Local mode settings */}
-                {gameMode !== 'online' && (
-                  <div className="max-w-[420px]">
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                      className="h-11 px-6 rounded-xl btn-primary text-sm font-semibold"
-                      onClick={startGame}>Start game →</motion.button>
-                    <p className="mt-4 text-sm" style={{ color: 'var(--text-body)' }}>
-                      <strong style={{ color: 'var(--text-strong)' }}>{maxRounds} rounds</strong> · <strong style={{ color: 'var(--text-strong)' }}>{turnTimeLimit}s</strong> per turn
-                    </p>
-                    <div className="mt-4 glass-raised rounded-xl p-4">
-                      <p className="text-[10px] tracking-[0.18em] uppercase mb-4" style={{ color: 'var(--text-muted)' }}>Game settings</p>
-                      <label className="block text-xs mb-2" style={{ color: 'var(--text-body)' }}>Turn time — <strong style={{ color: 'var(--text-strong)' }}>{turnTimeLimit}s</strong></label>
-                      <input type="range" min="5" max="30" step="1" value={turnTimeLimit}
-                        onChange={e => setTurnTimeLimit(parseInt(e.target.value))}
-                        className="w-full mb-5" style={{ accentColor: 'var(--good)' }} />
-                      <label className="block text-xs mb-2" style={{ color: 'var(--text-body)' }}>Rounds — <strong style={{ color: 'var(--text-strong)' }}>{maxRounds}</strong></label>
-                      <input type="range" min="5" max="30" step="1" value={maxRounds}
-                        onChange={e => setMaxRounds(parseInt(e.target.value))}
-                        className="w-full" style={{ accentColor: 'var(--good)' }} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Online lobby (create / join) */}
-                {gameMode === 'online' && gamePhase === 'intro' && (
-                  <div className="max-w-[420px]">
-                    <p className="text-sm mb-5" style={{ color: 'var(--text-body)' }}>
-                      2–4 players · {ONLINE_STANDARD_ROUNDS} rounds · {ONLINE_STANDARD_TURN_SECONDS}s per turn
-                    </p>
-                    {onlineSessionError && (
-                      <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                        className="mb-3 text-sm px-3 py-2 rounded-lg"
-                        style={{ color: 'var(--bad)', background: 'var(--bad-bg)', border: '1px solid rgba(248,113,113,0.2)' }}>
-                        {onlineSessionError}
-                      </motion.p>
-                    )}
-                    <div className="glass-raised rounded-xl p-4 space-y-3">
-                      {onlineLobbyError && (
-                        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                          className="text-sm px-3 py-2 rounded-lg"
-                          style={{ color: 'var(--bad)', background: 'var(--bad-bg)', border: '1px solid rgba(248,113,113,0.2)' }}>
-                          {onlineLobbyError}
-                        </motion.p>
-                      )}
-                      <div>
-                        <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Your name</label>
-                        <input type="text" maxLength={24} placeholder="Player name" value={onlineNameInput}
-                          onChange={e => setOnlineNameInput(e.target.value)} className="form-input" />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-1.5" style={{ color: 'var(--text-muted)' }}>Max players</label>
-                        <select value={onlineMaxPlayers} onChange={e => setOnlineMaxPlayers(parseInt(e.target.value))}
-                          className="form-input">
-                          <option value="2">2 players</option>
-                          <option value="3">3 players</option>
-                          <option value="4">4 players</option>
-                        </select>
-                      </div>
-                      <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                        className="w-full h-10 rounded-lg btn-primary text-sm font-semibold"
-                        onClick={createRoom}>Create room</motion.button>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-                        <span className="text-[10px] tracking-[0.12em] uppercase" style={{ color: 'var(--text-muted)' }}>or join</span>
-                        <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-                      </div>
-                      <div className="flex gap-2">
-                        <input type="text" maxLength={8} autoComplete="off" spellCheck="false"
-                          placeholder="Room code" value={onlineJoinCodeInput}
-                          onChange={e => {
-                            const v = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-                            setOnlineJoinCodeInput(v);
-                            if (v.length === 6 || v.length === 8) joinRoomWithCode(v);
-                          }}
-                          className="form-input flex-1 uppercase tracking-widest" />
-                        <motion.button whileTap={{ scale: 0.96 }}
-                          className="px-4 h-10 rounded-lg btn-ghost text-sm shrink-0"
-                          onClick={() => joinRoomWithCode(onlineJoinCodeInput)}>Join</motion.button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Online waiting lobby */}
-                {gameMode === 'online' && gamePhase === 'waiting' && (
-                  <div className="glass-raised rounded-xl p-4 max-w-[420px]">
-                    <p className="text-[10px] tracking-[0.18em] uppercase mb-3" style={{ color: 'var(--text-muted)' }}>Waiting to start</p>
-                    <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
-                      <p className="text-[10px] uppercase tracking-[0.12em] mb-2" style={{ color: 'var(--text-muted)' }}>Players in room</p>
-                      <ul className="space-y-1.5">
-                        {onlinePlayers.map((p, i) => (
-                          <motion.li key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
-                            className="text-sm flex items-center gap-2" style={{ color: 'var(--text-body)' }}>
-                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
-                              style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-strong)' }}>{i + 1}</span>
-                            {p.name || '–'}
-                          </motion.li>
-                        ))}
-                      </ul>
-                    </div>
-                    <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{waitingStatus}</p>
-                    {canStartRoom && (
-                      <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
-                        className="w-full h-10 mb-3 rounded-lg btn-primary text-sm font-semibold"
-                        onClick={startOnlineRoom}>Start game</motion.button>
-                    )}
-                    {isHostPlayer && hostJoinUrl && (
-                      <div className="rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}>
-                        <p className="text-[10px] uppercase tracking-[0.12em] mb-2" style={{ color: 'var(--text-muted)' }}>Invite link</p>
-                        <p className="text-xs font-mono break-all leading-snug mb-2" style={{ color: 'var(--text-body)' }}>{hostJoinUrl}</p>
-                        <div className="flex items-center gap-2">
-                          <motion.button whileTap={{ scale: 0.96 }}
-                            className="h-7 px-3 rounded-md btn-ghost text-xs"
-                            onClick={() => navigator.clipboard.writeText(hostJoinUrl).catch(() => { })}>Copy link</motion.button>
-                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Code: <strong style={{ color: 'var(--text-strong)' }}>{onlineCode}</strong></span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-            </AnimatePresence>
-
-            {/* ── ACTIVE GAME ── */}
-            <AnimatePresence mode="wait">
-            {gamePhase === 'active' && (
-              <motion.div key="active"
-                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="flex-1 p-2 sm:p-3 border-t overflow-hidden min-h-0 flex"
-                style={{ borderColor: 'var(--border)' }}>
-                <main className="flex-1 rounded-xl p-3 sm:p-4 overflow-hidden min-h-0 flex flex-col game-board">
-
-                  {/* Top bar: turn indicator + timer */}
-                  <div className="shrink-0 flex items-center justify-between mb-2">
-                    {/* Turn badge */}
-                    <AnimatePresence mode="wait">
-                      <motion.div key={turnLabel}
-                        initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
-                        transition={{ duration: 0.22 }}
-                        className="flex flex-col">
-                        <span className="text-[9px] tracking-[0.18em] uppercase" style={{ color: 'var(--text-muted)' }}>Now playing</span>
-                        <span className="text-sm sm:text-base font-bold tracking-[0.06em]"
-                          style={{ color: isUserTurn || !isUserTurn ? 'var(--text-strong)' : 'var(--text-body)' }}>
-                          {turnLabel}
-                        </span>
-                      </motion.div>
-                    </AnimatePresence>
-
-                    {/* Circular timer */}
-                    <CircularTimer
-                      timeRemaining={timeRemaining}
-                      maxTime={turnTimeLimit}
-                      urgent={timerUrgent}
-                      waiting={submitting}
-                    />
-                  </div>
-
-                  {/* Hint bar */}
-                  <AnimatePresence>
-                  {hintsStep < 3 && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden mb-2">
-                      <div className="flex items-start gap-2 rounded-lg border border-dashed px-3 py-2"
-                        style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.03)' }}>
-                        <p className="flex-1 text-xs leading-snug" style={{ color: 'var(--text-body)' }}>
-                          {hintMessage(hintsStep, gameMode, isUserTurn, moveNumber)}
-                        </p>
-                        <button type="button" className="shrink-0 text-base leading-none"
-                          style={{ color: 'var(--text-muted)' }} onClick={() => bumpHint()}>×</button>
-                      </div>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-
-                  {/* Round progress — tile dots (capped for long matches) */}
-                  <div className="shrink-0 mb-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="game-subtitle">Round {currentRound}/{maxRounds}</span>
-                      <span className="game-subtitle">{Math.round((currentRound / maxRounds) * 100)}%</span>
-                    </div>
-                    {maxRounds <= 15 ? (
-                      <div className="round-dots">
-                        {Array.from({ length: maxRounds }, (_, i) => {
-                          const n = i + 1;
-                          let cls = 'round-dot';
-                          if (n < currentRound) cls += ' done';
-                          else if (n === currentRound) cls += ' current';
-                          return <span key={n} className={cls} title={`Round ${n}`} />;
-                        })}
-                      </div>
-                    ) : (
-                      <div className="h-2 w-full rounded overflow-hidden" style={{ background: 'var(--progress-track)' }}>
-                        <motion.div className="h-full"
-                          style={{ background: 'var(--good)', borderRadius: 4 }}
-                          animate={{ width: `${Math.min(100, (currentRound / maxRounds) * 100)}%` }}
-                          transition={{ duration: 0.6, ease: 'easeOut' }} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Word panels */}
-                  <div className="shrink-0 grid grid-cols-1 sm:grid-cols-2 gap-3">
-
-                    {/* P1 panel */}
-                    <motion.div layout className={panelCls(p1Tier, activeIsP1)}>
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="game-subtitle">{p1Name}</span>
-                        <span className="text-right">
-                          <span ref={p1ScoreRef} className="block text-sm font-bold tabular-nums" style={{ color: 'var(--text-strong)' }}>{userScore.toFixed(2)}</span>
-                          <span className="inline-flex gap-0.5 mt-0.5">
-                            {Array.from({ length: STRIKE_LIMIT }).map((_, i) => (
-                              <span key={i} className={`strike-pip${i < strikesP1 ? ' used' : ''}`} />
-                            ))}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="min-h-[3rem] flex items-center justify-center py-1">
-                        {(activeIsP1 && (gameMode !== 'online' || isUserTurn) && !submitting) ? (
-                          <WordInputTiles
-                            id="word-input-main"
-                            inputRef={wordInputRef}
-                            value={wordInput}
-                            onChange={e => setWordInput(e.target.value)}
-                            placeholder="Type a word"
-                            maxLength={24}
-                            size="md"
-                          />
-                        ) : displayUserWord !== '–' ? (
-                          <WordTiles word={displayUserWord} tier={p1Tier} size="md" animateReveal minSlots={displayUserWord.length} />
-                        ) : (
-                          <WordTiles word="" size="md" placeholder minSlots={5} />
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {/* P2 panel */}
-                    <motion.div layout className={panelCls(p2Tier, !activeIsP1)}>
-                      <div className="flex items-start justify-between mb-2">
-                        <span className="game-subtitle">{p2Name}</span>
-                        <span className="text-right">
-                          <span ref={p2ScoreRef} className="block text-sm font-bold tabular-nums" style={{ color: 'var(--text-strong)' }}>{computerScore.toFixed(2)}</span>
-                          <span className="inline-flex gap-0.5 mt-0.5">
-                            {Array.from({ length: STRIKE_LIMIT }).map((_, i) => (
-                              <span key={i} className={`strike-pip${i < strikesP2 ? ' used' : ''}`} />
-                            ))}
-                          </span>
-                        </span>
-                      </div>
-                      <div className="min-h-[3rem] flex items-center justify-center py-1">
-                        {(gameMode === 'pvp' && !activeIsP1) ? (
-                          <WordInputTiles
-                            id="word-input-main"
-                            inputRef={wordInputRef}
-                            value={wordInput}
-                            onChange={e => setWordInput(e.target.value)}
-                            placeholder={`${p2Name}, type`}
-                            maxLength={24}
-                            size="md"
-                          />
-                        ) : displayOppWord !== '–' ? (
-                          <WordTiles word={displayOppWord} tier={p2Tier} size="md" animateReveal minSlots={displayOppWord.length} />
-                        ) : (
-                          <WordTiles word="" size="md" placeholder minSlots={5} />
-                        )}
-                      </div>
-                    </motion.div>
-                  </div>
-
-                  {/* Safety meter */}
-                  <AnimatePresence>
-                  {safetyTier && (
-                    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                      className="shrink-0 my-2">
-                      <p className="text-[9px] uppercase tracking-[0.14em] font-semibold mb-1.5" style={{ color: 'var(--text-muted)' }}>Jump safety</p>
-                      <div className="flex gap-1.5">
-                        {[
-                          { key: 'bad', label: 'Danger', cls: 'safety-active-danger' },
-                          { key: 'mid', label: 'Risky', cls: 'safety-active-mid' },
-                          { key: 'good', label: 'Safe', cls: 'safety-active-good' },
-                        ].map(seg => (
-                          <motion.div key={seg.key}
-                            animate={{ scale: safetyTier === seg.key ? 1.04 : 1 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                            className={`safety-seg ${safetyTier === seg.key ? seg.cls : ''}`}>
-                            {seg.label}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-
-                  {/* Submit */}
-                  <div className="shrink-0 mt-2 flex sm:justify-end">
-                    <motion.button type="button"
-                      whileHover={!submitting ? { scale: 1.02 } : {}}
-                      whileTap={!submitting ? { scale: 0.97 } : {}}
-                      className="submit-btn h-11 sm:h-12 w-full sm:w-auto sm:min-w-[140px] rounded-xl text-sm sm:text-base px-5"
-                      disabled={submitting} onClick={submitWord}>
-                      {submitting ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="timer-wait-dots visible" style={{ height: '1em' }}>
-                            <span className="timer-wait-dot" /><span className="timer-wait-dot" /><span className="timer-wait-dot" />
-                          </span>
-                          Sending
-                        </span>
-                      ) : 'Enter'}
-                    </motion.button>
-                  </div>
-
-                  {/* Premove panel */}
-                  <AnimatePresence>
-                  {(gameMode === 'online' || gameMode === 'pvc') && !isUserTurn && !submitting && (
-                    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                      className="shrink-0 mt-2 rounded-xl border border-dashed px-3 py-2.5"
-                      style={{ borderColor: 'rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.02)' }}>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[9px] uppercase tracking-[0.16em] font-semibold shrink-0" style={{ color: 'var(--text-muted)' }}>Premove</span>
-                        <input id="premove-input" type="text" maxLength={24} autoComplete="off"
-                          inputMode="text" enterKeyHint="go"
-                          placeholder="Queue your next word"
-                          value={premoveInput} onChange={e => setPremoveInput(e.target.value)}
-                          className="premove-input flex-1 min-w-[120px]" />
-                        <motion.button type="button" whileTap={{ scale: 0.95 }}
-                          className="h-8 px-3 rounded-lg btn-primary text-xs font-semibold shrink-0"
-                          onClick={queuePremove}>Queue</motion.button>
-                        <button type="button" className="h-8 px-3 rounded-lg btn-ghost text-xs shrink-0"
-                          onClick={() => { setPremoveWord(null); setPremoveInput(''); }}>Clear</button>
-                      </div>
-                      <AnimatePresence>
-                      {premoveWord && (
-                        <motion.p initial={{ opacity: 0, y: -3 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                          className="mt-1.5 text-[11px]" style={{ color: 'var(--good)' }}>
-                          ✓ Queued: &quot;{premoveWord}&quot; — auto-submits on your turn
-                        </motion.p>
-                      )}
-                      </AnimatePresence>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-
-                  {/* Hit feedback / Error + combo */}
-                  <div className="shrink-0 mt-1.5 flex items-center justify-between min-h-5">
-                    <AnimatePresence mode="wait">
-                      {errorMsg ? (
-                        <motion.span key={'err-' + errorMsg} initial={{ opacity: 0, x: -4 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}
-                          className="text-xs font-medium" style={{ color: 'var(--bad)' }}>{errorMsg}</motion.span>
-                      ) : hitMsg ? (
-                        <motion.span key={'hit-' + hitMsg} initial={{ opacity: 0, y: 4, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0 }}
-                          className="text-xs font-semibold tracking-wide" style={{ color: 'var(--good)' }}>{hitMsg}</motion.span>
-                      ) : null}
-                    </AnimatePresence>
-                    <AnimatePresence>
-                    {comboCount >= 2 && (
-                      <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                        className="text-xs font-semibold" style={{ color: 'var(--mid)' }}>×{comboCount} combo!</motion.span>
-                    )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* History */}
-                  <WordHistory history={history} p1Name={p1Name} p2Name={p2Name} gameMode={gameMode} />
-                </main>
-              </motion.div>
-            )}
-            </AnimatePresence>
-
-            {/* ── GAME OVER ── */}
-            <AnimatePresence mode="wait">
-            {gamePhase === 'over' && (
-              <motion.div key="over"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="flex-1 overflow-y-auto p-3 sm:p-5 border-t flex items-start sm:items-center justify-center"
-                style={{ borderColor: 'var(--border)' }}>
-                <motion.div
-                  initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  className="w-full max-w-[720px] glass rounded-2xl p-5 sm:p-7">
-
-                  {/* Result headline */}
-                  <motion.h2
-                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1, duration: 0.4 }}
-                    className="text-2xl sm:text-3xl tracking-[0.06em] text-center game-title"
-                    style={{
-                      color: isOnlineLoss || gameEndedByTimeout || (gameEndedTooClose && tooCloseLoserIsUser) ? 'var(--bad)' : 'var(--good)'
-                    }}>
-                    {resultText}
-                  </motion.h2>
-
-                  {/* Score cards */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.4 }}
-                    className="mt-5 grid grid-cols-2 gap-3 text-center">
-                    {[[p1Name, userScore, strikesP1], [p2Name, computerScore, strikesP2]].map(([name, score, strikes]) => (
-                      <div key={name} className="glass-raised rounded-xl p-3">
-                        <p className="text-[10px] tracking-[0.16em] uppercase mb-1" style={{ color: 'var(--text-muted)' }}>{name}</p>
-                        <p className="text-3xl font-bold tabular-nums" style={{ color: 'var(--text-strong)' }}>
-                          {Number(score).toFixed(2)}
-                        </p>
-                        <p className="text-[10px] mt-0.5" style={{ color: strikes >= STRIKE_LIMIT ? 'var(--bad)' : 'var(--text-muted)' }}>
-                          {strikes}/{STRIKE_LIMIT} strikes
-                        </p>
-                      </div>
-                    ))}
-                  </motion.div>
-
-                  {/* Action buttons */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3, duration: 0.4 }}
-                    className="mt-4 flex gap-2">
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                      className="flex-1 h-10 rounded-xl btn-primary text-sm font-semibold"
-                      onClick={() => {
-                        if (gameMode === 'online' && onlineCode && onlineToken) requestRematch(true);
-                        else { resetGame(); }
-                      }}>
-                      {gameMode === 'online' ? 'Rematch' : 'Play again'}
-                    </motion.button>
-                    <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                      type="button" className="flex-1 h-10 rounded-xl btn-ghost text-sm"
-                      onClick={() => { setShareText(buildShareSummary()); setShowSharePanel(s => !s); }}>
-                      Share
-                    </motion.button>
-                    {gameMode === 'online' && (
-                      <motion.button whileTap={{ scale: 0.97 }}
-                        type="button" className="flex-1 h-10 rounded-xl btn-ghost text-sm"
-                        onClick={() => { resetGame(); }}>
-                        Leave
-                      </motion.button>
-                    )}
-                  </motion.div>
-
-                  {rematchStatus && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                      className="mt-2 text-xs text-center" style={{ color: 'var(--text-muted)' }}>
-                      {rematchStatus}
-                    </motion.p>
-                  )}
-
-                  {/* Share panel */}
-                  <AnimatePresence>
-                  {showSharePanel && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden">
-                      <div className="mt-3 glass-raised rounded-xl p-3">
-                        <p className="text-[10px] tracking-[0.16em] uppercase mb-2" style={{ color: 'var(--text-muted)' }}>Shareable summary</p>
-                        <textarea readOnly className="w-full h-24 rounded-lg p-2 text-xs font-mono resize-none"
-                          style={{ background: 'rgba(0,0,0,0.3)', color: 'var(--text-body)', border: '1px solid var(--border)' }}
-                          value={shareText} />
-                        <div className="mt-2 flex items-center gap-2">
-                          <motion.button whileTap={{ scale: 0.96 }}
-                            type="button" className="h-8 px-3 rounded-lg btn-primary text-xs font-medium"
-                            onClick={copyToClipboard}>Copy</motion.button>
-                          <AnimatePresence>
-                          {copyStatus && (
-                            <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                              className="text-xs" style={{ color: 'var(--good)' }}>{copyStatus}</motion.span>
-                          )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-
-                  {/* Analysis table */}
-                  {analysisRows.length > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.45, duration: 0.4 }}
-                      className="mt-4 rounded-xl overflow-hidden"
-                      style={{ border: '1px solid var(--border)' }}>
-                      <div className="px-3 py-2 text-[10px] tracking-[0.16em] uppercase"
-                        style={{ background: 'rgba(255,255,255,0.04)', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>
-                        Move analysis
-                      </div>
-                      <div className="max-h-60 overflow-y-auto">
-                        <table className="w-full text-sm">
-                          <thead style={{ background: 'rgba(255,255,255,0.03)', color: 'var(--text-muted)' }}>
-                            <tr>
-                              {['#', 'Player', 'Word', 'Distance', 'Strike note', 'Best move'].map(h => (
-                                <th key={h} className="text-left px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.1em]">{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {analysisRows.map((item, idx) => {
-                              const pn = item.player === 'user' ? p1Name : p2Name;
-                              const isStrike = item.moveResult === 'STRIKE';
-                              const dist = isStrike
-                                ? `strike (${Number(item.distance).toFixed(3)})`
-                                : Number(item.distance).toFixed(3);
-                              let note = '–';
-                              if (isStrike) {
-                                const r = item.relation;
-                                note = r?.explanation?.trim() || r?.summary?.trim() || String(item.strikeReason || '').trim() || '–';
-                              }
-                              const bm = item.bestMove
-                                ? `${item.bestMove.word} (${Number(item.bestMove.distance).toFixed(3)})` : '–';
-                              return (
-                                <tr key={idx} className="border-t transition"
-                                  style={{ borderColor: 'var(--border)', color: isStrike ? 'var(--bad)' : 'var(--text-body)' }}>
-                                  <td className="px-3 py-1.5 text-[11px]">{idx + 1}</td>
-                                  <td className="px-3 py-1.5 text-[11px]">{pn}</td>
-                                  <td className="px-3 py-1.5 text-[11px] font-semibold" style={{ color: 'var(--text-strong)' }}>{item.word}</td>
-                                  <td className="px-3 py-1.5 text-[11px]">{dist}</td>
-                                  <td className="px-3 py-1.5 text-[11px] leading-snug max-w-[160px]">{note}</td>
-                                  <td className="px-3 py-1.5 text-[11px]" style={{ color: 'var(--good)' }}>{bm}</td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    </motion.div>
-                  )}
-                </motion.div>
-              </motion.div>
-            )}
+              {(gamePhase === 'intro' || gamePhase === 'waiting') && (
+                <GameLobby
+                  key="lobby"
+                  gameMode={gameMode}
+                  gamePhase={gamePhase}
+                  turnTimeLimit={turnTimeLimit}
+                  setTurnTimeLimit={setTurnTimeLimit}
+                  maxRounds={maxRounds}
+                  setMaxRounds={setMaxRounds}
+                  onStartGame={startGame}
+                  onlineStandardRounds={ONLINE_STANDARD_ROUNDS}
+                  onlineStandardTurnSeconds={ONLINE_STANDARD_TURN_SECONDS}
+                  onlineSessionError={onlineSessionError}
+                  onlineLobbyError={onlineLobbyError}
+                  onlineNameInput={onlineNameInput}
+                  setOnlineNameInput={setOnlineNameInput}
+                  onlineMaxPlayers={onlineMaxPlayers}
+                  setOnlineMaxPlayers={setOnlineMaxPlayers}
+                  onCreateRoom={createRoom}
+                  onlineJoinCodeInput={onlineJoinCodeInput}
+                  setOnlineJoinCodeInput={setOnlineJoinCodeInput}
+                  onJoinRoom={joinRoomWithCode}
+                  onlinePlayers={onlinePlayers}
+                  waitingStatus={waitingStatus}
+                  canStartRoom={canStartRoom}
+                  onStartOnlineRoom={startOnlineRoom}
+                  isHostPlayer={isHostPlayer}
+                  hostJoinUrl={hostJoinUrl}
+                  onlineCode={onlineCode}
+                />
+              )}
+              {gamePhase === 'active' && (
+                <GameBoard
+                  key="active"
+                  gameMode={gameMode}
+                  isUserTurn={isUserTurn}
+                  activeIsP1={activeIsP1}
+                  turnLabel={turnLabel}
+                  timeRemaining={timeRemaining}
+                  turnTimeLimit={turnTimeLimit}
+                  timerUrgent={timerUrgent}
+                  submitting={submitting}
+                  hintsStep={hintsStep}
+                  onBumpHint={() => bumpHint()}
+                  moveNumber={moveNumber}
+                  currentRound={currentRound}
+                  maxRounds={maxRounds}
+                  p1Tier={p1Tier}
+                  p2Tier={p2Tier}
+                  p1Name={p1Name}
+                  p2Name={p2Name}
+                  userScore={userScore}
+                  computerScore={computerScore}
+                  strikesP1={strikesP1}
+                  strikesP2={strikesP2}
+                  strikeLimit={STRIKE_LIMIT}
+                  wordInputRef={wordInputRef}
+                  wordInput={wordInput}
+                  setWordInput={setWordInput}
+                  displayUserWord={displayUserWord}
+                  displayOppWord={displayOppWord}
+                  p1ScoreRef={p1ScoreRef}
+                  p2ScoreRef={p2ScoreRef}
+                  safetyTier={safetyTier}
+                  onSubmitWord={submitWord}
+                  errorMsg={errorMsg}
+                  hitMsg={hitMsg}
+                  comboCount={comboCount}
+                  premoveWord={premoveWord}
+                  premoveInput={premoveInput}
+                  setPremoveInput={setPremoveInput}
+                  onQueuePremove={queuePremove}
+                  onClearPremove={clearPremove}
+                  history={history}
+                />
+              )}
+              {gamePhase === 'over' && (
+                <GameOver
+                  key="over"
+                  isLoss={isLoss}
+                  resultText={resultText}
+                  p1Name={p1Name}
+                  p2Name={p2Name}
+                  userScore={userScore}
+                  computerScore={computerScore}
+                  strikesP1={strikesP1}
+                  strikesP2={strikesP2}
+                  strikeLimit={STRIKE_LIMIT}
+                  gameMode={gameMode}
+                  onlineCode={onlineCode}
+                  onlineToken={onlineToken}
+                  onPlayAgain={resetGame}
+                  onRematch={() => requestRematch(true)}
+                  onLeave={resetGame}
+                  showSharePanel={showSharePanel}
+                  onToggleShare={toggleSharePanel}
+                  shareText={shareText}
+                  copyStatus={copyStatus}
+                  onCopy={copyToClipboard}
+                  analysisRows={analysisRows}
+                  rematchStatus={rematchStatus}
+                  pvcResult={pvcResult}
+                />
+              )}
             </AnimatePresence>
 
           </div>

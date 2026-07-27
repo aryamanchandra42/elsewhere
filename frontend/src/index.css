@@ -1,53 +1,45 @@
 @import 'tailwindcss';
 
-/* ─── Design tokens (word-game palette) ─────────────────────────────────── */
+/* ─── Design tokens (light word-game palette) ───────────────────────────── */
 :root {
-  /* Background layers — Wordle-inspired dark board */
-  --bg-deep:    #121213;
-  --bg-mid:     #1a1a1b;
-  --bg-surface: #252526;
-  --bg-raised:  #2d2d2e;
-  --bg-card:    #1a1a1b;
+  --bg-deep:    #ffffff;
+  --bg-mid:     #f6f7f8;
+  --bg-surface: #edeff1;
+  --bg-raised:  #e3e5e8;
+  --bg-card:    #ffffff;
 
-  /* Borders */
-  --border:        #3a3a3c;
-  --border-soft:   #2f2f31;
-  --border-strong: #565758;
+  --border:        #d3d6da;
+  --border-soft:   #e3e5e8;
+  --border-strong: #878a8c;
 
-  /* Text */
-  --text-strong: #ffffff;
-  --text-body:   #d7dadc;
+  --text-strong: #1a1a1b;
+  --text-body:   #4a4a4c;
   --text-muted:  #818384;
 
-  /* Accent */
-  --accent: #ffffff;
+  --accent: #1a1a1b;
 
-  /* Surface extras */
-  --header-bg:      rgba(18,18,19,0.96);
-  --modal-bg:       #1a1a1b;
-  --progress-track: #3a3a3c;
+  --header-bg:      rgba(255,255,255,0.96);
+  --modal-bg:       #ffffff;
+  --progress-track: #d3d6da;
 
-  /* Tile colors */
-  --tile-empty:   #3a3a3c;
-  --tile-filled:  #565758;
-  --tile-border:  #565758;
+  --tile-empty:   #ffffff;
+  --tile-filled:  #878a8c;
+  --tile-border:  #878a8c;
 
-  /* Game tier colors — classic word-game feedback */
   --good:     #6aaa64;
-  --good-bg:  rgba(106,170,100,0.18);
-  --good-glow:rgba(106,170,100,0.35);
+  --good-bg:  rgba(106,170,100,0.14);
+  --good-glow:rgba(106,170,100,0.25);
 
   --mid:      #c9b458;
-  --mid-bg:   rgba(201,180,88,0.18);
-  --mid-glow: rgba(201,180,88,0.32);
+  --mid-bg:   rgba(201,180,88,0.14);
+  --mid-glow: rgba(201,180,88,0.22);
 
   --bad:      #787c7e;
-  --bad-bg:   rgba(120,124,126,0.22);
-  --bad-glow: rgba(120,124,126,0.28);
+  --bad-bg:   rgba(120,124,126,0.14);
+  --bad-glow: rgba(120,124,126,0.18);
 
-  --danger:   #f87171;
+  --danger:   #b35b4a;
 
-  /* Legacy aliases kept for compat */
   --lux-bg-a:        var(--bg-deep);
   --lux-bg-b:        var(--bg-mid);
   --lux-surface:     var(--bg-surface);
@@ -62,120 +54,6 @@
   --wordle-absent:   var(--bad);
 }
 
-/* ─── Light theme overrides ──────────────────────────────────────────────── */
-[data-theme="light"] {
-  --bg-deep:    #ffffff;
-  --bg-mid:     #f6f7f8;
-  --bg-surface: #edeff1;
-  --bg-raised:  #e3e5e8;
-  --bg-card:    #ffffff;
-  --border:        #d3d6da;
-  --border-soft:   #e3e5e8;
-  --border-strong: #878a8c;
-  --text-strong: #1a1a1b;
-  --text-body:   #4a4a4c;
-  --text-muted:  #818384;
-  --accent:      #1a1a1b;
-  --header-bg:   rgba(255,255,255,0.96);
-  --modal-bg:    #ffffff;
-  --progress-track: #d3d6da;
-  --tile-empty:   #ffffff;
-  --tile-filled:  #878a8c;
-  --tile-border:  #878a8c;
-  --lux-text-strong: #1a1a1b;
-  --lux-text-body:   #4a4a4c;
-  --lux-text-muted:  #818384;
-  --lux-bg-a:    #ffffff;
-  --lux-bg-b:    #f6f7f8;
-  --lux-surface: #edeff1;
-  --lux-border:  #d3d6da;
-}
-[data-theme="light"] body {
-  background: var(--bg-deep);
-  color: var(--text-strong);
-}
-[data-theme="light"] .bg-mesh {
-  background: linear-gradient(180deg, #ffffff 0%, #f6f7f8 100%);
-}
-[data-theme="light"] .glass {
-  background: #ffffff;
-  border-color: var(--border);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
-}
-[data-theme="light"] .glass-raised {
-  background: #f6f7f8;
-  border-color: var(--border-soft);
-}
-[data-theme="light"] .game-board {
-  background: #ffffff;
-  border-color: var(--border);
-}
-[data-theme="light"] .player-panel {
-  background: #f6f7f8;
-  border-color: var(--border-soft);
-}
-[data-theme="light"] .word-tile.tile-empty {
-  background: #ffffff;
-  border-color: #d3d6da;
-  color: transparent;
-}
-[data-theme="light"] .word-tile.tile-filled {
-  background: #878a8c;
-  border-color: #878a8c;
-  color: #ffffff;
-}
-[data-theme="light"] .btn-ghost {
-  border-color: rgba(0,0,0,0.14);
-  color: var(--text-body);
-}
-[data-theme="light"] .btn-ghost:hover {
-  background: rgba(0,0,0,0.05);
-  border-color: rgba(0,0,0,0.22);
-  color: var(--text-strong);
-}
-[data-theme="light"] .btn-primary {
-  background: #6aaa64;
-  color: #ffffff;
-}
-[data-theme="light"] .submit-btn {
-  background: #6aaa64;
-  border-color: #6aaa64;
-  color: #ffffff;
-}
-[data-theme="light"] .submit-btn:hover:not(:disabled) {
-  background: #5d9558;
-  box-shadow: 0 2px 8px rgba(106,170,100,0.35);
-}
-[data-theme="light"] .form-input,
-[data-theme="light"] .premove-input {
-  background: rgba(0,0,0,0.04);
-  border-color: rgba(0,0,0,0.12);
-  color: var(--text-strong);
-}
-[data-theme="light"] .form-input:focus,
-[data-theme="light"] .premove-input:focus {
-  border-color: rgba(0,0,0,0.28);
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
-}
-[data-theme="light"] .history-entry {
-  background: rgba(0,0,0,0.025);
-  border-color: rgba(0,0,0,0.08);
-}
-[data-theme="light"] .safety-seg {
-  background: rgba(0,0,0,0.04);
-  border-color: rgba(0,0,0,0.07);
-}
-[data-theme="light"] .word-card-shell.active-turn {
-  outline-color: rgba(0,0,0,0.35);
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.1);
-}
-[data-theme="light"] .timer-ring-track {
-  stroke: rgba(0,0,0,0.08);
-}
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.15);
-}
-
 /* ─── Base ────────────────────────────────────────────────────────────────── */
 html {
   -webkit-text-size-adjust: 100%;
@@ -183,6 +61,7 @@ html {
   touch-action: manipulation;
   height: 100dvh;
   overflow: hidden;
+  color-scheme: light;
 }
 
 body {
@@ -200,20 +79,20 @@ input, textarea, select { font-size: 16px !important; }
 /* ─── Scrollbar ───────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 999px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 999px; }
 
-/* ─── Background — clean game board ──────────────────────────────────────── */
+/* ─── Background ─────────────────────────────────────────────────────────── */
 .bg-mesh {
-  background: var(--bg-deep);
+  background: linear-gradient(180deg, #ffffff 0%, #f6f7f8 100%);
 }
 
 /* ─── Game board shell ────────────────────────────────────────────────────── */
 .game-board {
-  background: var(--bg-mid);
-  border: 1px solid var(--border-soft);
+  background: #ffffff;
+  border: 1px solid var(--border);
 }
 .player-panel {
-  background: var(--bg-surface);
+  background: #f6f7f8;
   border: 2px solid var(--border-soft);
   border-radius: 8px;
   transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
@@ -259,8 +138,8 @@ input, textarea, select { font-size: 16px !important; }
   perspective: 200px;
 }
 .tile-empty {
-  background: var(--tile-empty);
-  border-color: var(--border-strong);
+  background: #ffffff;
+  border-color: #d3d6da;
   color: transparent;
 }
 .tile-filled {
@@ -294,7 +173,7 @@ input, textarea, select { font-size: 16px !important; }
   color: #ffffff;
 }
 @keyframes tileCursorBlink {
-  0%, 100% { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55); }
+  0%, 100% { box-shadow: inset 0 0 0 2px rgba(26,26,27,0.35); }
   50%      { box-shadow: none; }
 }
 
@@ -396,16 +275,13 @@ input, textarea, select { font-size: 16px !important; }
 
 /* ─── Glass card ──────────────────────────────────────────────────────────── */
 .glass {
-  background: var(--bg-card);
+  background: #ffffff;
   border: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
 }
 .glass-raised {
-  background: var(--bg-raised);
+  background: #f6f7f8;
   border: 1px solid var(--border-soft);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
 }
 
 /* ─── Word card tier styles (legacy compat) ──────────────────────────────── */
@@ -432,21 +308,21 @@ input, textarea, select { font-size: 16px !important; }
   box-shadow: 0 0 20px var(--bad-glow), inset 0 1px 0 rgba(248,113,113,0.15);
 }
 .word-card-shell.active-turn {
-  outline: 1.5px solid rgba(255,255,255,0.35);
+  outline: 1.5px solid rgba(0,0,0,0.35);
   outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(255,255,255,0.05), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.1);
 }
 .word-card-shell.active-turn.tier-good {
   outline: 1.5px solid var(--good);
-  box-shadow: 0 0 24px var(--good-glow), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 24px var(--good-glow), 0 4px 20px rgba(0,0,0,0.08);
 }
 .word-card-shell.active-turn.tier-mid {
   outline: 1.5px solid var(--mid);
-  box-shadow: 0 0 24px var(--mid-glow), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 24px var(--mid-glow), 0 4px 20px rgba(0,0,0,0.08);
 }
 .word-card-shell.active-turn.tier-bad {
   outline: 1.5px solid var(--bad);
-  box-shadow: 0 0 24px var(--bad-glow), 0 4px 20px rgba(0,0,0,0.4);
+  box-shadow: 0 0 24px var(--bad-glow), 0 4px 20px rgba(0,0,0,0.08);
 }
 
 /* ─── Word card input ─────────────────────────────────────────────────────── */
@@ -494,7 +370,7 @@ input, textarea, select { font-size: 16px !important; }
 
 /* ─── Circular timer ring ─────────────────────────────────────────────────── */
 .timer-ring-track {
-  stroke: rgba(255,255,255,0.08);
+  stroke: rgba(0,0,0,0.08);
   fill: none;
 }
 .timer-ring-progress {
@@ -566,8 +442,8 @@ input, textarea, select { font-size: 16px !important; }
   padding: 8px 4px;
   border-radius: 4px;
   color: var(--text-muted);
-  background: var(--tile-empty);
-  border: 2px solid var(--border-strong);
+  background: rgba(0,0,0,0.04);
+  border: 2px solid rgba(0,0,0,0.07);
   transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
 .safety-active-danger {
@@ -665,8 +541,8 @@ input, textarea, select { font-size: 16px !important; }
 
 /* ─── Premove input ───────────────────────────────────────────────────────── */
 .premove-input {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.12);
   color: var(--text-strong);
   border-radius: 8px;
   padding: 0 10px;
@@ -675,8 +551,8 @@ input, textarea, select { font-size: 16px !important; }
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .premove-input:focus {
-  border-color: rgba(255,255,255,0.22);
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.06);
+  border-color: rgba(0,0,0,0.28);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
 }
 .premove-input::placeholder { color: var(--text-muted); }
 
@@ -702,15 +578,15 @@ input, textarea, select { font-size: 16px !important; }
   transition: background 0.18s, border-color 0.18s, color 0.18s;
 }
 .btn-ghost:hover {
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.05);
+  border-color: rgba(0,0,0,0.22);
   color: var(--text-strong);
 }
 
 /* ─── Wordle history entry ────────────────────────────────────────────────── */
 .history-entry {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-soft);
+  background: rgba(0,0,0,0.025);
+  border: 1px solid rgba(0,0,0,0.08);
   border-radius: 6px;
   border-left-width: 3px;
 }
@@ -733,16 +609,16 @@ input, textarea, select { font-size: 16px !important; }
   width: 100%;
   height: 40px;
   padding: 0 12px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--border);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.12);
   border-radius: 8px;
   color: var(--text-strong);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .form-input:focus {
-  border-color: rgba(255,255,255,0.25);
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.06);
+  border-color: rgba(0,0,0,0.28);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
 }
 .form-input::placeholder { color: var(--text-muted); }
 
@@ -753,3 +629,202 @@ input, textarea, select { font-size: 16px !important; }
   100% { transform: scale(1); }
 }
 .score-bump { animation: scoreBump 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+/* ─── Mode cards (menu row + landing grid) ────────────────────────────────── */
+.mode-card-tile {
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.mode-card-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-soft);
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.mode-card-row:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-raised);
+}
+.mode-card-selected {
+  border-color: var(--good);
+  background: var(--good-bg);
+  box-shadow: 0 0 0 1px var(--good);
+}
+.mode-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.mode-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mode-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.mode-card-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 99px;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.mode-card-desc {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.mode-card-arrow {
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ─── Lobby (settings / online create-join / waiting room) ───────────────── */
+.lobby-shell {
+  display: block;
+}
+.screen-card { width: 100%; }
+.rules-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--text-body);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+}
+.rules-pill-mode {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--text-strong);
+  background: var(--good-bg);
+  border-color: rgba(106,170,100,0.3);
+}
+.lobby-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  justify-content: center;
+}
+.lobby-divider-line {
+  background: var(--border);
+  flex: 1;
+  height: 1px;
+}
+@media (min-width: 768px) {
+  .lobby-divider {
+    flex-direction: column;
+    height: 100%;
+    gap: 0.5rem;
+  }
+  .lobby-divider-line {
+    width: 1px;
+    height: auto;
+    flex: 1;
+  }
+}
+
+/* ─── Beat the AI CTA banner ───────────────────────────────────────────────── */
+.beat-ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--good-bg);
+  border: 1px solid rgba(106,170,100,0.25);
+  text-decoration: none;
+  transition: box-shadow 0.2s, transform 0.1s;
+}
+.beat-ai-banner:hover { box-shadow: 0 4px 16px rgba(106,170,100,0.18); }
+.beat-ai-banner-muted {
+  background: var(--bg-surface);
+  border-color: var(--border-soft);
+}
+.beat-ai-text {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-body);
+  text-align: left;
+}
+.beat-ai-text strong { color: var(--text-strong); }
+.beat-ai-arrow {
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+/* ─── Hero gameplay demo frame ─────────────────────────────────────────────── */
+.demo-frame {
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  border-radius: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  padding: 1rem 1.25rem 1.25rem;
+}
+.demo-frame-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+.demo-frame-dots {
+  display: flex;
+  gap: 4px;
+}
+.demo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  opacity: 0.4;
+  transition: opacity 0.2s, background 0.2s;
+}
+.demo-dot.active {
+  opacity: 1;
+  background: var(--good);
+}
+.demo-frame-body {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.demo-frame-body > div { width: 100%; text-align: center; }
+.demo-caption {
+  margin-top: 0.6rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .demo-dot { transition: none; }
+}

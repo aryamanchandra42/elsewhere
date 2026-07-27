@@ -1,128 +1,99 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import ModalShell from './ui/ModalShell.jsx';
+import { WordPairDemo } from './WordTiles.jsx';
+import { MODES } from '../constants/modes.js';
+import { HERO_TAGLINE } from '../constants/copy.js';
 
-const STEPS = [
-  {
-    title: 'Stay Elsewhere',
-    content: (
-      <div>
-        <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--lux-text-body)' }}>
-          Each turn, pick a word that means something <strong>different</strong> from the last one.
-        </p>
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="rounded-lg border p-3" style={{ borderColor: 'var(--lux-border)', background: 'var(--lux-surface-soft)' }}>
-            <p className="font-serif text-lg" style={{ fontFamily: "'Cormorant Garamond', serif", color: 'var(--lux-text-strong)' }}>
-              apple <span style={{ color: 'var(--lux-text-muted)' }}>→</span> galaxy
-            </p>
-            <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: '#e2e2e3' }}>
-              <div className="h-full rounded-full" style={{ width: '88%', background: '#6aaa64' }} />
-            </div>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#6aaa64' }}>Safe jump</p>
-          </div>
-          <div className="rounded-lg border p-3" style={{ borderColor: 'var(--lux-border)', background: 'var(--lux-surface-soft)' }}>
-            <p className="font-serif text-lg" style={{ fontFamily: "'Cormorant Garamond', serif", color: 'var(--lux-text-strong)' }}>
-              apple <span style={{ color: 'var(--lux-text-muted)' }}>→</span> orange
-            </p>
-            <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: '#e2e2e3' }}>
-              <div className="h-full rounded-full" style={{ width: '22%', background: '#787c7e' }} />
-            </div>
-            <p className="mt-2 text-xs font-semibold uppercase tracking-wider" style={{ color: '#787c7e' }}>Too close: strike toward loss</p>
-          </div>
-        </div>
-      </div>
-    )
-  },
-  {
-    title: 'Rules',
-    content: (
-      <div>
-        <ul className="mt-4 space-y-2 text-sm" style={{ color: 'var(--lux-text-body)' }}>
-          <li>Land too close in meaning and you take a strike. Three strikes and you lose.</li>
-          <li>You have a timer each turn. Think fast.</li>
-        </ul>
-        <p className="mt-4 text-[11px] tracking-[0.14em] uppercase font-semibold" style={{ color: 'var(--lux-text-muted)' }}>Move quality</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium" style={{ borderColor: 'var(--lux-border)', background: 'rgba(106,170,100,0.12)' }}>
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#6aaa64' }} /> Safe
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium" style={{ borderColor: 'var(--lux-border)', background: 'rgba(201,180,88,0.14)' }}>
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#c9b458' }} /> Risky
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium" style={{ borderColor: 'var(--lux-border)', background: 'rgba(120,124,126,0.12)' }}>
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: '#787c7e' }} /> Lose zone
-          </span>
-        </div>
-      </div>
-    )
-  },
-  {
-    title: 'Choose a mode',
-    content: (
-      <div className="mt-4 space-y-2">
-        {[
-          { label: 'VS Computer', desc: 'Alternate with the AI. Same rules.' },
-          { label: 'Pass & Play', desc: 'Two players, one device. Pass after each word.' },
-          { label: 'Online room', desc: 'Share a link or code and play a friend remotely.' },
-        ].map(m => (
-          <div key={m.label} className="rounded-lg border p-3" style={{ borderColor: 'var(--lux-border)', background: 'var(--lux-surface-soft)' }}>
-            <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--lux-text-muted)' }}>{m.label}</p>
-            <p className="mt-1 text-sm" style={{ color: 'var(--lux-text-body)' }}>{m.desc}</p>
-          </div>
-        ))}
-      </div>
-    )
-  }
-];
+const TOTAL_STEPS = 3;
+const TITLES = ['Stay Elsewhere', 'The rules', 'Choose a mode'];
 
 export default function IntroOverlay({ onClose }) {
   const [step, setStep] = useState(1);
-  const isLast = step >= 3;
+  const isLast = step >= TOTAL_STEPS;
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center px-3 py-6"
-      style={{ zIndex: 70, background: 'rgba(0,0,0,0.45)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-[420px] rounded-xl border bg-white shadow-xl p-5 sm:p-6 text-left overflow-y-auto"
-        style={{ maxHeight: 'min(92vh,640px)', borderColor: 'var(--lux-border)' }}
-        onClick={e => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        <h2 className="text-3xl sm:text-4xl tracking-[0.06em]" style={{ fontFamily: "'Cormorant Garamond', serif", color: 'var(--lux-text-strong)' }}>
-          {STEPS[step - 1].title}
-        </h2>
-        {STEPS[step - 1].content}
-
-        <div className="mt-6 flex flex-col-reverse sm:flex-row gap-2 sm:justify-between sm:items-center">
-          <button
-            type="button"
-            className="text-sm underline underline-offset-4"
-            style={{ color: 'var(--lux-text-muted)' }}
-            onClick={() => { setStep(3); }}
-          >Skip</button>
-          <div className="flex gap-2">
-            {!isLast && (
-              <button
-                type="button"
-                className="flex-1 sm:flex-none min-h-11 px-5 rounded-md text-white font-semibold"
-                style={{ background: '#121213' }}
-                onClick={() => setStep(s => Math.min(3, s + 1))}
-              >Next</button>
-            )}
-            {isLast && (
-              <button
-                type="button"
-                className="flex-1 sm:flex-none min-h-11 px-5 rounded-md text-white font-semibold"
-                style={{ background: '#121213' }}
-                onClick={onClose}
-              >Got it, let&apos;s play</button>
+    <ModalShell
+      eyebrow="Welcome"
+      title={TITLES[step - 1]}
+      onClose={onClose}
+      maxWidth={440}
+      zIndex={70}
+      footer={
+        <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-between sm:items-center">
+          <button type="button" className="text-sm underline underline-offset-4"
+            style={{ color: 'var(--text-muted)' }}
+            onClick={() => setStep(TOTAL_STEPS)}>Skip</button>
+          <div className="flex items-center gap-3 justify-between sm:justify-end">
+            <div className="flex gap-1.5" aria-label={`Step ${step} of ${TOTAL_STEPS}`}>
+              {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+                <span key={i} className={`round-dot${i < step ? ' done' : ''}${i === step - 1 ? ' current' : ''}`} />
+              ))}
+            </div>
+            {!isLast ? (
+              <button type="button" className="min-h-11 px-5 rounded-lg btn-primary text-sm font-semibold"
+                onClick={() => setStep(s => Math.min(TOTAL_STEPS, s + 1))}>Next</button>
+            ) : (
+              <button type="button" className="min-h-11 px-5 rounded-lg btn-primary text-sm font-semibold"
+                onClick={onClose}>Got it, let&apos;s play</button>
             )}
           </div>
         </div>
-        <p className="mt-3 text-center text-[11px]" style={{ color: 'var(--lux-text-muted)' }}>{step} / 3</p>
-      </div>
-    </div>
+      }>
+      <AnimatePresence mode="wait">
+        {step === 1 && (
+          <motion.div key="s1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-body)' }}>
+              {HERO_TAGLINE.primary} {HERO_TAGLINE.secondary}
+            </p>
+            <div className="mt-5 grid grid-cols-1 gap-3">
+              <div className="rounded-lg p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
+                <WordPairDemo from="apple" to="galaxy" tier="good" size="sm" />
+                <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-center" style={{ color: 'var(--good)' }}>Safe jump</p>
+              </div>
+              <div className="rounded-lg p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
+                <WordPairDemo from="apple" to="orange" tier="bad" size="sm" />
+                <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-center" style={{ color: 'var(--bad)' }}>Too close — strike</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+        {step === 2 && (
+          <motion.div key="s2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+            <ul className="space-y-2 text-sm list-disc pl-4" style={{ color: 'var(--text-body)' }}>
+              <li>Land too close in meaning and you take a strike. Three strikes and you lose.</li>
+              <li>You have a timer each turn. Think fast.</li>
+            </ul>
+            <p className="mt-4 text-[11px] tracking-[0.14em] uppercase font-semibold" style={{ color: 'var(--text-muted)' }}>Move quality</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                { color: 'var(--good)', label: 'Safe' },
+                { color: 'var(--mid)', label: 'Risky' },
+                { color: 'var(--bad)', label: 'Lose zone' },
+              ].map(c => (
+                <span key={c.label} className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', color: c.color }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: c.color, display: 'inline-block' }} />
+                  {c.label}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+        {step === 3 && (
+          <motion.div key="s3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="space-y-2">
+            {MODES.map(m => (
+              <div key={m.id} className="rounded-lg p-3 flex items-center gap-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
+                <span className={`word-tile tile-${m.tone}`} style={{ width: 32, height: 32, fontSize: '0.9rem', borderRadius: 4, flexShrink: 0 }}>{m.tileLetter}</span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{m.title}</p>
+                  <p className="mt-0.5 text-sm" style={{ color: 'var(--text-body)' }}>{m.body}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </ModalShell>
   );
 }

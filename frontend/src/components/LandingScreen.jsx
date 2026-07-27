@@ -1,6 +1,9 @@
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { WordPairDemo } from './WordTiles.jsx';
+import GameplayDemo from './landing/GameplayDemo.jsx';
+import BeatAiBanner from './ui/BeatAiBanner.jsx';
+import { MODES } from '../constants/modes.js';
+import { HERO_TAGLINE } from '../constants/copy.js';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -26,12 +29,6 @@ const STEPS = [
   { n: '03', title: 'AI judges instantly', body: 'GloVe embeddings measure the distance. Too close triggers a strike. Three strikes = eliminated.' },
 ];
 
-const MODES = [
-  { icon: '🤖', title: 'VS Computer', tag: 'Solo', body: 'Play against an AI opponent that can earn strikes just like you can.', cta: 'Play solo' },
-  { icon: '🤝', title: 'Pass & Play', tag: 'Local', body: 'Two players, one device. Hand the screen between turns — no account needed.', cta: 'Play local' },
-  { icon: '🌐', title: 'Online Room', tag: 'Multiplayer', body: 'Create a private room and invite friends via a link or 6-digit code. 15 rounds · 10 s each.', cta: 'Play online' },
-];
-
 const FACTS = [
   { value: '3', label: 'strikes to lose' },
   { value: '15', label: 'rounds online' },
@@ -39,7 +36,7 @@ const FACTS = [
   { value: '∞', label: 'word pairs' },
 ];
 
-export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleTheme }) {
+export default function LandingScreen({ onPlay, onHowToPlay }) {
   return (
     <div className="fixed inset-0 overflow-y-auto"
       style={{ fontFamily: 'Inter, sans-serif', color: 'var(--text-strong)' }}>
@@ -51,13 +48,6 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
           ELSEWHERE
         </span>
         <div className="flex items-center gap-2">
-          <button type="button"
-            onClick={onToggleTheme}
-            className="w-9 h-9 rounded-lg flex items-center justify-center transition"
-            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: 15 }}
-            title="Toggle theme">
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
           <button type="button" onClick={onHowToPlay}
             className="btn-ghost rounded-lg text-xs px-4 h-9">How to play</button>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
@@ -95,38 +85,24 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
           ELSEWHERE
         </motion.h1>
 
-        <motion.p
+        <motion.div
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18, duration: 0.6 }}
-          style={{ marginTop: '1.5rem', maxWidth: 460, fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--text-body)' }}>
-          The word game where <strong style={{ color: 'var(--text-strong)' }}>semantic distance</strong> is the only rule.
-          Jump far from every word — or pay with a strike.
-        </motion.p>
+          style={{ marginTop: '1.5rem', maxWidth: 460 }}>
+          <p style={{ fontSize: '1rem', lineHeight: 1.7, color: 'var(--text-strong)', fontWeight: 600 }}>
+            {HERO_TAGLINE.primary}
+          </p>
+          <p style={{ marginTop: '0.4rem', fontSize: '0.9rem', lineHeight: 1.7, color: 'var(--text-muted)' }}>
+            {HERO_TAGLINE.secondary}
+          </p>
+        </motion.div>
 
-        {/* Distance demo — letter tiles */}
+        {/* Animated gameplay demo */}
         <motion.div
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.28, duration: 0.6 }}
-          style={{ marginTop: '2.5rem', width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-          {[
-            { from: 'apple', to: 'galaxy', tier: 'good', label: 'Safe — huge jump', pct: '88%' },
-            { from: 'apple', to: 'orange', tier: 'bad', label: 'Strike — too close', pct: '18%' },
-          ].map((ex) => (
-            <div key={ex.from + ex.to} className="rounded-lg px-4 py-4 text-left"
-              style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
-              <WordPairDemo from={ex.from} to={ex.to} tier={ex.tier} size="sm" />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem' }}>
-                <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }}>{ex.label}</span>
-                <span className="game-subtitle">{ex.pct}</span>
-              </div>
-              <div style={{ height: 6, borderRadius: 4, background: 'var(--progress-track)', overflow: 'hidden', marginTop: '0.5rem' }}>
-                <motion.div
-                  initial={{ width: 0 }} animate={{ width: ex.pct }}
-                  transition={{ delay: 0.9, duration: 0.8, ease: 'easeOut' }}
-                  style={{ height: '100%', borderRadius: 4, background: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }} />
-              </div>
-            </div>
-          ))}
+          style={{ marginTop: '2.25rem' }}>
+          <GameplayDemo />
         </motion.div>
 
         {/* CTA buttons */}
@@ -146,9 +122,17 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
           </motion.button>
         </motion.div>
 
+        {/* Beat the AI CTA */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.46, duration: 0.5 }}
+          style={{ marginTop: '1.75rem', width: '100%', maxWidth: 420 }}>
+          <BeatAiBanner variant="primary" />
+        </motion.div>
+
         {/* Scroll nudge */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} transition={{ delay: 1.5, duration: 0.6 }}
-          style={{ marginTop: '3.5rem', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+          style={{ marginTop: '2.5rem', fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
           scroll to explore ↓
         </motion.div>
       </section>
@@ -178,7 +162,7 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
             <Reveal key={s.n} delay={i * 0.1}>
               <div className="rounded-2xl p-5 h-full"
                 style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
-                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '2.5rem', lineHeight: 1, color: 'var(--border-strong)', marginBottom: '1rem' }}>{s.n}</div>
+                <div className="game-title" style={{ fontSize: '1.6rem', lineHeight: 1, color: 'var(--border-strong)', marginBottom: '1rem' }}>{s.n}</div>
                 <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-strong)', marginBottom: '0.5rem' }}>{s.title}</h3>
                 <p style={{ fontSize: '0.875rem', lineHeight: 1.7, color: 'var(--text-body)' }}>{s.body}</p>
               </div>
@@ -192,18 +176,18 @@ export default function LandingScreen({ onPlay, onHowToPlay, theme, onToggleThem
         <div className="max-w-4xl mx-auto px-5 sm:px-8 py-20">
           <Reveal>
             <p style={{ fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>How you play</p>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(2rem, 6vw, 3rem)', color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: '3rem' }}>
+            <h2 className="game-title" style={{ fontSize: 'clamp(1.6rem, 5vw, 2.4rem)', color: 'var(--text-strong)', lineHeight: 1.1, marginBottom: '3rem' }}>
               Three ways to play
             </h2>
           </Reveal>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {MODES.map((m, i) => (
-              <Reveal key={m.title} delay={i * 0.1}>
-                <motion.div whileHover={{ y: -3, boxShadow: '0 12px 40px rgba(0,0,0,0.18)' }}
+              <Reveal key={m.id} delay={i * 0.1}>
+                <motion.div whileHover={{ y: -3, boxShadow: '0 12px 40px rgba(0,0,0,0.1)' }}
                   transition={{ duration: 0.25 }}
                   className="rounded-2xl p-5 h-full flex flex-col"
-                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', cursor: 'default' }}>
-                  <div style={{ fontSize: '1.8rem', marginBottom: '0.85rem' }}>{m.icon}</div>
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}>
+                  <span className={`word-tile tile-${m.tone}`} style={{ width: 40, height: 40, fontSize: '1.1rem', borderRadius: 6, marginBottom: '0.85rem' }}>{m.tileLetter}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-strong)' }}>{m.title}</h3>
                     <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 99, background: 'var(--bg-raised)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>{m.tag}</span>

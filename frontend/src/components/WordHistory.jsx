@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import WordTiles from './WordTiles.jsx';
 
 function tierFromEntry(item) {
@@ -58,13 +59,30 @@ function HistoryEntry({ item, p1Name, p2Name, gameMode }) {
 }
 
 export default function WordHistory({ history, p1Name, p2Name, gameMode }) {
+  const [expanded, setExpanded] = useState(false);
+
+  // On desktop the panel is always visible via CSS (md:flex) regardless of `expanded` —
+  // keep the toggle's aria state honest by defaulting to "expanded" above the md breakpoint.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setExpanded(mq.matches);
+    const handler = (e) => setExpanded(e.matches);
+    mq.addEventListener?.('change', handler);
+    return () => mq.removeEventListener?.('change', handler);
+  }, []);
+
   return (
-    <div
-      className="mt-3 border rounded-lg px-3 py-2 min-h-0 flex-1 flex flex-col max-md:hidden"
-      style={{ borderColor: 'var(--border-soft)', background: 'var(--bg-surface)', minHeight: '120px' }}
-    >
-      <p className="game-subtitle mb-2">Word trail</p>
-      <div className="min-h-0 h-full overflow-y-auto pr-1 space-y-2 text-sm" style={{ color: 'var(--text-body)' }}>
+    <div className="mt-3 border rounded-lg px-3 py-2 min-h-0 shrink-0 md:flex-1 flex flex-col"
+      style={{ borderColor: 'var(--border-soft)', background: 'var(--bg-surface)' }}>
+      <button type="button"
+        className="flex items-center justify-between w-full md:pointer-events-none"
+        onClick={() => setExpanded(e => !e)}
+        aria-expanded={expanded}>
+        <span className="game-subtitle">Word trail{history.length > 0 ? ` · ${history.length}` : ''}</span>
+        <span className="text-xs md:hidden" style={{ color: 'var(--text-muted)' }} aria-hidden>{expanded ? '▾' : '▸'}</span>
+      </button>
+      <div className={`${expanded ? 'flex' : 'hidden'} md:flex mt-2 min-h-0 flex-1 flex-col overflow-y-auto pr-1 space-y-2 text-sm`}
+        style={{ color: 'var(--text-body)' }}>
         {history.length === 0
           ? <div className="text-center pt-2 game-subtitle">No words played yet…</div>
           : [...history].reverse().map((item, i) => (

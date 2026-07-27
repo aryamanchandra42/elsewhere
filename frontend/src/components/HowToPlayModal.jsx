@@ -1,9 +1,12 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useEffect } from 'react';
+import { WordPairDemo } from './WordTiles.jsx';
+import { MODES } from '../constants/modes.js';
+import { HOW_TO_PLAY_INTRO } from '../constants/copy.js';
 
 const EXAMPLES = [
-  { pair: 'apple → galaxy', pct: '88%', color: 'var(--good)', label: 'Safe — huge semantic jump' },
-  { pair: 'apple → orange', pct: '18%', color: 'var(--bad)', label: 'Strike — same fruit category' },
+  { from: 'apple', to: 'galaxy', tier: 'good', pct: '88%', label: 'Safe — huge semantic jump' },
+  { from: 'apple', to: 'orange', tier: 'bad', pct: '18%', label: 'Strike — same fruit category' },
 ];
 
 const SECTIONS = [
@@ -39,12 +42,6 @@ const SECTIONS = [
   },
 ];
 
-const MODES = [
-  { icon: '🤖', title: 'VS Computer', desc: 'Alternate turns with the AI. It can strike out the same way you can.' },
-  { icon: '🤝', title: 'Pass & Play', desc: 'Two players, one device. Hand the phone between turns.' },
-  { icon: '🌐', title: 'Online Room', desc: 'Create or join a room via link or code. 15 rounds · 10 s per turn.' },
-];
-
 export default function HowToPlayModal({ onClose }) {
   // Close on Escape
   useEffect(() => {
@@ -61,7 +58,7 @@ export default function HowToPlayModal({ onClose }) {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       className="fixed inset-0 flex items-start justify-center"
-      style={{ zIndex: 80, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' }}
+      style={{ zIndex: 80, background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <motion.div
@@ -75,7 +72,7 @@ export default function HowToPlayModal({ onClose }) {
           overflowY: 'auto',
           background: 'var(--modal-bg)',
           border: '1px solid var(--border)',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.45), 0 0 0 1px var(--border-soft)',
+          boxShadow: '0 16px 48px rgba(0,0,0,0.12), 0 0 0 1px var(--border-soft)',
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -83,7 +80,7 @@ export default function HowToPlayModal({ onClose }) {
         <div className="flex items-start justify-between px-6 pt-6 pb-0">
           <div>
             <p className="text-[10px] tracking-[0.2em] uppercase mb-1" style={{ color: 'var(--text-muted)' }}>Guide</p>
-            <h3 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 'clamp(1.6rem,5vw,2.2rem)', color: 'var(--text-strong)', lineHeight: 1 }}>
+            <h3 className="text-2xl sm:text-3xl game-title" style={{ color: 'var(--text-strong)' }}>
               How to play
             </h3>
           </div>
@@ -97,7 +94,7 @@ export default function HowToPlayModal({ onClose }) {
 
           {/* Tagline */}
           <p style={{ color: 'var(--text-body)', lineHeight: 1.7, fontSize: '0.9rem' }}>
-            Elsewhere measures how <strong style={{ color: 'var(--text-strong)' }}>semantically distant</strong> your word is from the last one using AI embeddings. Jump far — stay safe. Get too close and you earn a strike. Three strikes and you're out.
+            {HOW_TO_PLAY_INTRO}
           </p>
 
           {/* Examples */}
@@ -105,15 +102,15 @@ export default function HowToPlayModal({ onClose }) {
             <p className="text-[10px] tracking-[0.18em] uppercase font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Examples</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {EXAMPLES.map(ex => (
-                <div key={ex.pair} className="rounded-xl p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
+                <div key={ex.from + ex.to} className="rounded-xl p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
                   <div className="flex items-center justify-between mb-2">
-                    <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: '1.15rem', color: 'var(--text-strong)' }}>{ex.pair}</span>
-                    <span style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: ex.color }}>{ex.pct}</span>
+                    <WordPairDemo from={ex.from} to={ex.to} tier={ex.tier} size="xs" />
+                    <span className="shrink-0 ml-2" style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }}>{ex.pct}</span>
                   </div>
                   <div className="rounded-full overflow-hidden" style={{ height: 5, background: 'var(--progress-track)' }}>
-                    <div style={{ width: ex.pct, height: '100%', borderRadius: 999, background: ex.color }} />
+                    <div style={{ width: ex.pct, height: '100%', borderRadius: 999, background: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }} />
                   </div>
-                  <p className="mt-2" style={{ fontSize: '11px', color: ex.color }}>{ex.label}</p>
+                  <p className="mt-2" style={{ fontSize: '11px', color: ex.tier === 'good' ? 'var(--good)' : 'var(--bad)' }}>{ex.label}</p>
                 </div>
               ))}
             </div>
@@ -157,17 +154,17 @@ export default function HowToPlayModal({ onClose }) {
             <p className="text-[10px] tracking-[0.18em] uppercase font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Game modes</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {MODES.map(m => (
-                <div key={m.title} className="rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
-                  <div className="text-xl mb-2">{m.icon}</div>
+                <div key={m.id} className="rounded-xl p-4" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)' }}>
+                  <span className={`word-tile tile-${m.tone}`} style={{ width: 30, height: 30, fontSize: '0.85rem', borderRadius: 4, marginBottom: '0.6rem' }}>{m.tileLetter}</span>
                   <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-strong)' }}>{m.title}</p>
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-body)' }}>{m.desc}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-body)' }}>{m.body}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Scoring note */}
-          <div className="rounded-xl px-4 py-3" style={{ background: 'rgba(74,222,128,0.06)', border: '1px solid rgba(74,222,128,0.15)' }}>
+          <div className="rounded-xl px-4 py-3" style={{ background: 'var(--good-bg)', border: '1px solid rgba(106,170,100,0.2)' }}>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--text-body)' }}>
               <strong style={{ color: 'var(--good)' }}>Scoring:</strong> Each valid move adds its cosine distance to your score. The further the jump, the more you earn. Win by outlasting your opponent — or survive all rounds for a tie.
             </p>

@@ -22,7 +22,7 @@ export default function CircularTimer({ timeRemaining, maxTime, urgent, waiting 
         <circle
           cx="36" cy="36" r={R}
           fill="none"
-          stroke="rgba(255,255,255,0.07)"
+          className="timer-ring-track"
           strokeWidth="4"
         />
         {/* Progress */}
